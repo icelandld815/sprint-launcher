@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFO QCC · Cosmic Wishes Expedition</title>
+    <!-- PeerJS for WebRTC -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(ellipse at 20% 30%, #0a0f2e, #000000 90%);
+            font-family: 'Segoe UI', 'Arial', system-ui, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 深邃宇宙层 - 3D星云效果 */
+        .universe {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+        }
+
+        .stars-layer1 {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            animation: rotateStars 200s linear infinite;
+        }
+
+        .stars-layer1::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background-image: 
+                radial-gradient(2px 2px at 10px 20px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 30px 60px, #fff, rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 70px 110px, #aaf, rgba(0,0,0,0)),
+                radial-gradient(4px 4px at 150px 230px, #faf, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 280px 90px, #ffa, rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 350px 200px, #aff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 420px 320px, #faa, rgba(0,0,0,0));
+            background-size: 500px 500px;
+            background-repeat: repeat;
+            opacity: 0.9;
+            transform: rotateZ(15deg);
+        }
+
+        .stars-layer2 {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            animation: rotateStarsReverse 300s linear infinite;
+        }
+
+        .stars-layer2::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background-image: 
+                radial-gradient(1px 1px at 5px 45px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 85px 175px, rgba(100,200,255,0.6), rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 240px 290px, rgba(255,200,100,0.5), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 400px 150px, rgba(200,100,255,0.5), rgba(0,0,0,0));
+            background-size: 600px 600px;
+            background-repeat: repeat;
+            transform: rotateZ(-10deg);
+        }
+
+        .nebula {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 30% 40%, rgba(100, 50, 150, 0.2) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 60%, rgba(50, 100, 200, 0.15) 0%, transparent 60%),
+                        radial-gradient(ellipse at 40% 80%, rgba(200, 100, 150, 0.1) 0%, transparent 70%);
+            filter: blur(40px);
+            animation: nebulaDrift 60s ease-in-out infinite alternate;
+        }
+
+        @keyframes rotateStars {
+            from { transform: rotate(0deg) scale(1); }
+            to { transform: rotate(360deg) scale(1.5); }
+        }
+
+        @keyframes rotateStarsReverse {
+            from { transform: rotate(0deg) scale(1.2); }
+            to { transform: rotate(-360deg) scale(1.8); }
+        }
+
+        @keyframes nebulaDrift {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+            100% { transform: translate(-5%, -5%) scale(1.2); opacity: 0.5; }
+        }
+
+        /* 主飞船控制台 */
+        .bridge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1200px;
+            max-width: 98vw;
+            background: rgba(8, 15, 30, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 2px solid rgba(120, 200, 255, 0.3);
+            border-radius: 60px;
+            padding: 40px 30px 50px;
+            box-shadow: 0 0 80px rgba(0, 160, 255, 0.3), inset 0 0 60px rgba(0, 80, 200, 0.3);
+            z-index: 100;
+            transition: opacity 1.5s ease, transform 2s ease;
+        }
+
+        .bridge.fade-out {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+            pointer-events: none;
+        }
+
+        .connection-bar {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 40, 70, 0.9);
+            padding: 10px 30px;
+            border-radius: 50px;
+            border: 2px solid #4ae0ff;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 40px cyan;
+            white-space: nowrap;
+            z-index: 200;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ff4444;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px #ff4444;
+        }
+
+        .status-dot.connected {
+            background: #44ff44;
+            box-shadow: 0 0 20px #44ff44;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 0 20px;
+            color: #b3e4ff;
+            border-bottom: 1px solid rgba(100, 180, 255, 0.3);
+            padding-bottom: 20px;
+        }
+
+        .ship-name {
+            font-size: 2.2rem;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-shadow: 0 0 20px cyan;
+        }
+
+        .ship-name span {
+            font-size: 3rem;
+            filter: drop-shadow(0 0 20px #00c8ff);
+        }
+
+        .room-badge {
+            background: linear-gradient(145deg, #2a1f4a, #1a2f5a);
+            padding: 10px 25px;
+            border-radius: 40px;
+            font-size: 1.2rem;
+            border: 1px solid #b87cff;
+            box-shadow: 0 0 30px #b87cff;
+        }
+
+        .main-display {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        /* UFO 展示区 */
+        .ufo-display {
+            flex: 1.2;
+            min-width: 350px;
+            height: 400px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ufo-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform-style: preserve-3d;
+            animation: ufoFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes ufoFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-10px) rotate(1deg); }
+            75% { transform: translateY(10px) rotate(-1deg); }
+        }
+
+        .ufo-body {
+            position: relative;
+            width: 280px;
+            height: 100px;
+            background: linear-gradient(145deg, #2a3f5a, #1a2f4a);
+            border-radius: 50% 50% 40% 40%;
+            border: 3px solid #7ac4ff;
+            box-shadow: 0 0 60px #00a6ff, inset 0 0 40px #4ae0ff;
+            transform-style: preserve-3d;
+        }
+
+        .ufo-dome {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 60px;
+            background: rgba(200, 230, 255, 0.3);
+            border-radius: 50% 50% 30% 30%;
+            border: 2px solid #b1ecff;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 40px #7ac4ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 20px white;
+        }
+
+        .ufo-ring {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            height: 40px;
+            background: linear-gradient(90deg, transparent, #4ae0ff, #b87cff, #4ae0ff, transparent);
+            border-radius: 50%;
+            filter: blur(10px);
+            animation: ringPulse 2s linear infinite;
+        }
+
+        @keyframes ringPulse {
+            0% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+            100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+        }
+
+        .ufo-beam {
+            position: absolute;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 150px;
+            background: radial-gradient(ellipse at top, rgba(100, 200, 255, 0.3), transparent);
+            filter: blur(20px);
+            animation: beamPulse 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes beamPulse {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) scaleY(1); }
+            50% { opacity: 0.8; transform: translateX(-50%) scaleY(1.3); }
+        }
+
+        .engine-glow {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            height: 60px;
+            background: radial-gradient(ellipse, #ffaa33, transparent);
+            filter: blur(30px);
+            opacity: 0.3;
+            transition: opacity 0.5s;
+        }
+
+        .engine-glow.primed {
+            opacity: 1;
+            background: radial-gradient(ellipse, #ffaa33, #ff44aa, #44aaff);
+            animation: engineThrob 1s infinite alternate;
+        }
+
+        @keyframes engineThrob {
+            from { transform: scale(1); opacity: 0.8; }
+            to { transform: scale(1.3); opacity: 1; }
+        }
+
+        .engine-status {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #9bc7ff;
+            background: rgba(0, 20, 40, 0.7);
+            padding: 10px 30px;
+            border-radius: 50px;
+            border: 1px solid #00a6ff;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 船员区 */
+        .crew-display {
+            flex: 2;
+            background: rgba(0, 10, 20, 0.5);
+            border-radius: 50px;
+            padding: 25px;
+            border: 1px solid #3f8ab3;
+            backdrop-filter: blur(10px);
+            transition: opacity 1s;
+        }
+
+        .crew-display.fade-out {
+            opacity: 0;
+        }
+
+        .topics-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .topic-section {
+            flex: 1 1 160px;
+            background: rgba(20, 40, 60, 0.6);
+            border-radius: 30px;
+            padding: 15px 10px;
+            border: 1px solid #5f9fc0;
+        }
+
+        .topic-title {
+            color: #ffd966;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #ffaa00;
+        }
+
+        .topic-crew {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .crew-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 70px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            filter: brightness(0.6) drop-shadow(0 0 5px black);
+        }
+
+        .crew-card.logged {
+            filter: brightness(1.3) drop-shadow(0 0 15px #4ae5ff);
+            transform: translateY(-8px);
+        }
+
+        .crew-card.exiting {
+            animation: exitToSpace 1.5s forwards;
+        }
+
+        @keyframes exitToSpace {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-200px) scale(0.5) rotate(20deg); filter: blur(10px); }
+        }
+
+        .avatar {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #2a4a6a, #1a2f4a);
+            border: 3px solid #5f9fc0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: all 0.3s;
+        }
+
+        .crew-card.logged .avatar {
+            border-color: #f0f9ff;
+            box-shadow: 0 0 30px #0ae0ff;
+        }
+
+        .crew-name {
+            margin-top: 5px;
+            color: #cae1f2;
+            font-size: 0.8rem;
+            background: rgba(15, 38, 56, 0.8);
+            padding: 3px 10px;
+            border-radius: 30px;
+            border: 1px solid #2f6991;
+        }
+
+        .crew-card.logged .crew-name {
+            background: #2a5a7a;
+            border-color: #7ac4ff;
+            color: white;
+        }
+
+        .leaders-section {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #4f8bb0;
+        }
+
+        .leader-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100px;
+            cursor: pointer;
+        }
+
+        .leader-card .avatar {
+            width: 70px;
+            height: 70px;
+            border-color: #ffb347;
+            font-size: 2.5rem;
+        }
+
+        .leader-card.logged .avatar {
+            border-color: #ffdf7e;
+            box-shadow: 0 0 40px #ffbf00;
+        }
+
+        .leader-name {
+            margin-top: 8px;
+            font-size: 1.1rem;
+            color: #ffd966;
+            background: rgba(42, 63, 78, 0.8);
+            padding: 5px 20px;
+            border-radius: 30px;
+            border: 1px solid #ffb347;
+        }
+
+        .launch-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 30px;
+            background: rgba(2, 14, 26, 0.8);
+            border-radius: 60px;
+            padding: 20px 30px;
+            border: 1px solid #4e8bb3;
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .crew-count {
+            color: #cdf2ff;
+            font-size: 1.2rem;
+        }
+
+        .count-highlight {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #f0fcff;
+            text-shadow: 0 0 20px #1eb0ff;
+            margin: 0 5px;
+        }
+
+        .progress-track {
+            flex: 1;
+            height: 16px;
+            background: #0d304a;
+            border-radius: 30px;
+            margin: 0 30px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px black;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4ae0ff, #b87cff, #ff6b6b);
+            border-radius: 30px;
+            box-shadow: 0 0 30px #00d9ff;
+            transition: width 0.3s ease;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .wish-list-btn {
+            background: linear-gradient(145deg, #4a2b6e, #2a1f4a);
+            border: 2px solid #b87cff;
+            color: white;
+            font-size: 1.2rem;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 0 30px #b87cff;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .wish-list-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px #d49cff;
+            background: linear-gradient(145deg, #5a3b8a, #3a2f6a);
+        }
+
+        .launch-btn {
+            background: linear-gradient(145deg, #1a3f5a, #0a1f3a);
+            border: 2px solid #48b5ff;
+            color: white;
+            font-size: 1.8rem;
+            padding: 12px 40px;
+            border-radius: 60px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            cursor: pointer;
+            box-shadow: 0 0 40px #0077ff;
+            transition: 0.3s;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .launch-btn.active {
+            background: #0076b3;
+            box-shadow: 0 0 80px #2ad4ff;
+            transform: scale(1.05);
+            animation: btnPulse 1s infinite alternate;
+        }
+
+        .launch-btn.launched {
+            background: #4a2b6e;
+            border-color: #c56bff;
+            box-shadow: 0 0 100px #b400ff;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        @keyframes btnPulse {
+            from { box-shadow: 0 0 40px #0077ff; }
+            to { box-shadow: 0 0 100px #00ddff; }
+        }
+
+        /* 愿望对话框 */
+        .wish-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .wish-dialog.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .wish-card {
+            width: 500px;
+            max-width: 90vw;
+            background: linear-gradient(145deg, #1a2f4a, #0a1f3a);
+            border: 3px solid #7ac4ff;
+            border-radius: 60px;
+            padding: 40px;
+            box-shadow: 0 0 100px cyan;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .wish-dialog.visible .wish-card {
+            transform: scale(1);
+        }
+
+        .wish-title {
+            font-size: 2.5rem;
+            color: #ffd966;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px #ffaa00;
+        }
+
+        .wish-subtitle {
+            font-size: 1.2rem;
+            color: #b3e4ff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .wish-name {
+            font-size: 2rem;
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(100, 200, 255, 0.2);
+            padding: 15px;
+            border-radius: 50px;
+            border: 1px solid cyan;
+        }
+
+        .wish-input {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.2rem;
+            background: rgba(0, 20, 40, 0.8);
+            border: 2px solid #4ae0ff;
+            border-radius: 40px;
+            color: white;
+            margin-bottom: 30px;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .wish-input:focus {
+            outline: none;
+            box-shadow: 0 0 30px cyan;
+        }
+
+        .wish-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .wish-btn {
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .wish-btn.submit {
+            background: linear-gradient(145deg, #4ae0ff, #0077ff);
+            color: white;
+            box-shadow: 0 0 30px #00a6ff;
+        }
+
+        .wish-btn.submit:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 50px cyan;
+        }
+
+        .wish-btn.cancel {
+            background: rgba(100, 100, 100, 0.3);
+            color: #ccc;
+            border: 1px solid #999;
+        }
+
+        .wish-btn.cancel:hover {
+            background: rgba(200, 200, 200, 0.3);
+        }
+
+        /* 愿望列表对话框 */
+        .wish-list-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            z-index: 15000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .wish-list-dialog.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .wish-list-card {
+            width: 800px;
+            max-width: 95vw;
+            max-height: 80vh;
+            background: linear-gradient(145deg, #1a2f4a, #0a1f3a);
+            border: 3px solid #b87cff;
+            border-radius: 60px;
+            padding: 40px;
+            box-shadow: 0 0 100px #b87cff;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wish-list-dialog.visible .wish-list-card {
+            transform: scale(1);
+        }
+
+        .wish-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #b87cff;
+        }
+
+        .wish-list-title {
+            font-size: 2.5rem;
+            color: #ffd966;
+            text-shadow: 0 0 30px #ffaa00;
+        }
+
+        .wish-list-close {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #b87cff;
+            color: white;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .wish-list-close:hover {
+            background: #b87cff;
+            transform: scale(1.1);
+        }
+
+        .wish-list-content {
+            overflow-y: auto;
+            padding-right: 10px;
+            max-height: 50vh;
+        }
+
+        .wish-list-content::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .wish-list-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .wish-list-content::-webkit-scrollbar-thumb {
+            background: #b87cff;
+            border-radius: 10px;
+        }
+
+        .wish-list-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #4ae0ff;
+            border-radius: 30px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s;
+        }
+
+        .wish-list-item:hover {
+            background: rgba(100, 200, 255, 0.1);
+            transform: translateX(10px);
+            border-color: #ffd966;
+        }
+
+        .wish-item-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #2a4a6a, #1a2f4a);
+            border: 3px solid #ffd966;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .wish-item-info {
+            flex: 1;
+        }
+
+        .wish-item-name {
+            font-size: 1.4rem;
+            color: #ffd966;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .wish-item-text {
+            font-size: 1.2rem;
+            color: white;
+            word-break: break-word;
+        }
+
+        .wish-item-empty {
+            color: #999;
+            font-style: italic;
+        }
+
+        .wish-list-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #b87cff;
+            display: flex;
+            justify-content: flex-end;
+            gap: 20px;
+        }
+
+        .export-btn {
+            background: linear-gradient(145deg, #4a6a8a, #2a4a6a);
+            border: 2px solid #4ae0ff;
+            color: white;
+            font-size: 1.2rem;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .export-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px #4ae0ff;
+            background: linear-gradient(145deg, #5a7a9a, #3a5a7a);
+        }
+
+        /* 探索阶段的UFO - 带船员和QCC */
+        .exploring-ufo {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .exploring-ufo.visible {
+            opacity: 1;
+            pointer-events: none;
+        }
+
+        .ufo-explore-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .ufo-explore {
+            width: 600px;
+            height: 220px;
+            background: linear-gradient(145deg, #3a5f8a, #1a3f6a);
+            border-radius: 50% 50% 40% 40%;
+            border: 4px solid #aaf0ff;
+            box-shadow: 0 0 150px cyan, inset 0 0 80px #aaf0ff;
+            position: relative;
+            animation: exploreFloat 4s ease-in-out infinite;
+        }
+
+        .ufo-explore::before {
+            content: 'QCC';
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50% 50% 30% 30%;
+            border: 3px solid #ffd966;
+            backdrop-filter: blur(15px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 900;
+            color: #ffd966;
+            text-shadow: 0 0 30px #ffaa00, 0 0 60px #ff6b6b;
+            letter-spacing: 10px;
+            box-shadow: 0 0 60px #ffaa00;
+            z-index: 2;
+        }
+
+        .crew-on-ufo {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            padding: 0 20px;
+            z-index: 3;
+            pointer-events: none;
+            margin-top: 60px; /* 向下移动，避免挡住QCC */
+        }
+
+        .ufo-crew-member {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #4a6a8a, #2a4a6a);
+            border-radius: 50%;
+            border: 3px solid #ffd966;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+            box-shadow: 0 0 30px #ffaa00, 0 0 60px #4ae0ff;
+            animation: crewOnUfo 2s ease-in-out infinite;
+            transform-origin: center bottom;
+            position: relative;
+            cursor: help;
+            pointer-events: auto;
+        }
+
+        /* 愿望提示框 */
+        .ufo-crew-member[data-wish] {
+            position: relative;
+        }
+
+        .ufo-crew-member:hover::before {
+            content: attr(data-wish);
+            position: absolute;
+            top: -70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: #ffd966;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 1rem;
+            white-space: nowrap;
+            border: 2px solid #ffaa00;
+            box-shadow: 0 0 30px #ffaa00;
+            z-index: 9999;
+            pointer-events: none;
+            text-shadow: 0 0 5px black;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .ufo-crew-member:hover::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #ffaa00;
+            filter: drop-shadow(0 0 10px #ffaa00);
+        }
+
+        @keyframes crewOnUfo {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        /* 为每个船员设置不同的动画延迟 */
+        .ufo-crew-member:nth-child(odd) {
+            animation-delay: 0.2s;
+        }
+        .ufo-crew-member:nth-child(3n) {
+            animation-delay: 0.5s;
+        }
+        .ufo-crew-member:nth-child(5n) {
+            animation-delay: 0.8s;
+        }
+
+        .explore-beam {
+            position: absolute;
+            bottom: -300px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 500px;
+            background: radial-gradient(ellipse at top, rgba(100, 200, 255, 0.4), transparent 70%);
+            filter: blur(50px);
+            animation: exploreBeam 4s ease-in-out infinite;
+        }
+
+        @keyframes exploreFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(2deg); }
+            66% { transform: translateY(20px) rotate(-2deg); }
+        }
+
+        @keyframes exploreBeam {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) scaleY(1); }
+            50% { opacity: 0.8; transform: translateX(-50%) scaleY(1.5); }
+        }
+
+        .warp-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(from 0deg, transparent, #4ae0ff, #b87cff, #ff6b6b, transparent);
+            filter: blur(100px);
+            opacity: 0;
+            animation: warpSpeed 3s forwards;
+        }
+
+        @keyframes warpSpeed {
+            0% { opacity: 0; transform: scale(0.1) rotate(0deg); }
+            50% { opacity: 1; transform: scale(2) rotate(180deg); }
+            100% { opacity: 0; transform: scale(3) rotate(360deg); }
+        }
+
+        /* 探索阶段的文字 */
+        .explore-tagline {
+            font-size: 2.2rem;
+            font-weight: 300;
+            color: white;
+            text-shadow: 0 0 20px cyan, 0 0 40px blue;
+            letter-spacing: 4px;
+            white-space: nowrap;
+            animation: taglineGlow 2s ease-in-out infinite;
+            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            padding: 15px 40px;
+            border-radius: 60px;
+            border: 1px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(10px);
+            margin-top: 40px;
+        }
+
+        .explore-tagline .year {
+            color: #ffd966;
+            font-weight: 700;
+            text-shadow: 0 0 30px #ffaa00;
+        }
+
+        @keyframes taglineGlow {
+            0%, 100% { opacity: 0.9; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); text-shadow: 0 0 30px cyan, 0 0 60px blue; }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 30, 50, 0.9);
+            color: #aaffff;
+            padding: 15px 40px;
+            border-radius: 50px;
+            border: 1px solid cyan;
+            box-shadow: 0 0 40px cyan;
+            z-index: 2000;
+            transition: opacity 0.5s;
+            font-size: 1.2rem;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 1000px) {
+            .main-display { flex-direction: column; }
+            .ufo-display { height: 300px; }
+            .ufo-explore { width: 400px; height: 150px; }
+            .ufo-explore::before { font-size: 2rem; width: 150px; height: 60px; }
+            .crew-on-ufo { margin-top: 40px; }
+            .ufo-crew-member { width: 40px; height: 40px; font-size: 1.2rem; }
+            .explore-tagline { font-size: 1.5rem; padding: 10px 20px; }
+            
+            .ufo-crew-member:hover::before {
+                font-size: 0.8rem;
+                padding: 5px 10px;
+                top: -50px;
+            }
+            
+            .launch-panel {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 深邃宇宙层 -->
+    <div class="universe">
+        <div class="stars-layer1"></div>
+        <div class="stars-layer2"></div>
+        <div class="nebula"></div>
+    </div>
+
+    <!-- 愿望对话框 -->
+    <div class="wish-dialog" id="wishDialog">
+        <div class="wish-card">
+            <div class="wish-title">✨ 星际愿望 ✨</div>
+            <div class="wish-subtitle">写下你对这个Sprint的愿望</div>
+            <div class="wish-name" id="wishMemberName"></div>
+            <textarea class="wish-input" id="wishInput" placeholder="例如: 希望代码零bug, 团队配合默契..." rows="3"></textarea>
+            <div class="wish-buttons">
+                <button class="wish-btn submit" id="wishSubmit">🚀 发射愿望</button>
+                <button class="wish-btn cancel" id="wishCancel">🌙 暂不</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 愿望列表对话框 -->
+    <div class="wish-list-dialog" id="wishListDialog">
+        <div class="wish-list-card">
+            <div class="wish-list-header">
+                <div class="wish-list-title">📜 所有星际愿望</div>
+                <div class="wish-list-close" id="wishListClose">✕</div>
+            </div>
+            <div class="wish-list-content" id="wishListContent">
+                <!-- 动态添加愿望列表 -->
+            </div>
+            <div class="wish-list-footer">
+                <button class="export-btn" id="exportWishesBtn">
+                    ⬇️ 导出愿望 (HTML)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主控制台 -->
+    <div class="bridge" id="bridge">
+        <!-- 连接状态栏 -->
+        <div class="connection-bar">
+            <div class="connection-status">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Connecting to cosmos...</span>
+            </div>
+            <div class="peer-count" id="peerCount">
+                👽 Cosmic Peers: 0
+            </div>
+            <div class="room-badge" id="roomDisplay">
+                🌌 Room: <span id="roomId">loading</span>
+            </div>
+        </div>
+
+        <div class="header">
+            <div class="ship-name">
+                <span>🛸</span> QCC · Wishes to the Stars
+            </div>
+            <div class="instruction-badge">
+                ⚡ Click to make a wish
+            </div>
+        </div>
+
+        <div class="main-display">
+            <!-- UFO 展示区 -->
+            <div class="ufo-display">
+                <div class="ufo-container">
+                    <div class="ufo-body">
+                        <div class="ufo-dome">QCC</div>
+                        <div class="ufo-ring"></div>
+                        <div class="ufo-beam"></div>
+                    </div>
+                    <div class="engine-glow" id="engineGlow"></div>
+                </div>
+                <div class="engine-status" id="engineLabel">
+                    🌀 Quantum Drive · Standby
+                </div>
+            </div>
+
+            <!-- 船员区 -->
+            <div class="crew-display" id="crewDisplay">
+                <!-- 5个主题区域 -->
+                <div class="topics-container">
+                    <div class="topic-section">
+                        <div class="topic-title">🔍 Quality Review</div>
+                        <div class="topic-crew" id="topic-quality"></div>
+                    </div>
+                    
+                    <div class="topic-section">
+                        <div class="topic-title">⚙️ CI/CD</div>
+                        <div class="topic-crew" id="topic-cicd"></div>
+                    </div>
+                    
+                    <div class="topic-section">
+                        <div class="topic-title">📊 Dashboard</div>
+                        <div class="topic-crew" id="topic-dashboard"></div>
+                    </div>
+                    
+                    <div class="topic-section">
+                        <div class="topic-title">🧪 Code Quality</div>
+                        <div class="topic-crew" id="topic-codequality"></div>
+                    </div>
+                    
+                    <div class="topic-section">
+                        <div class="topic-title">🌐 OSS</div>
+                        <div class="topic-crew" id="topic-oss"></div>
+                    </div>
+                </div>
+                
+                <!-- 领导者 -->
+                <div class="leaders-section" id="leader-container"></div>
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="launch-panel">
+            <div class="crew-count">
+                <span>👽 Crew with wishes </span>
+                <span class="count-highlight" id="loggedCount">0</span>
+                <span>/</span>
+                <span class="count-highlight" id="totalCount">17</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="action-buttons">
+                <button class="wish-list-btn" id="showWishListBtn">
+                    📜 愿望列表
+                </button>
+                <button class="launch-btn" id="launchBtn">🚀 启航</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 探索模式的UFO - 带船员和QCC -->
+    <div class="exploring-ufo" id="exploringUFO">
+        <div class="warp-effect" id="warpEffect"></div>
+        <div class="ufo-explore-wrapper">
+            <div class="ufo-explore">
+                <!-- QCC已经写在UFO的顶部 -->
+                <!-- 船员们会动态添加到这里，向下移动避免挡住QCC -->
+                <div class="crew-on-ufo" id="crewOnUFO"></div>
+                <div class="explore-beam"></div>
+            </div>
+            <div class="explore-tagline">
+                Let's explorer the <span class="year">Quality Enabler</span> journey together <span class="year">2026</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" style="opacity:0;">🌌 Cosmic sync established</div>
+
+    <script>
+        // ==================== Team Data ====================
+        const teamData = {
+            quality: [
+                { name: 'Jane', avatar: '👩‍💼' },
+                { name: 'Amy', avatar: '👩‍🔬' },
+                { name: 'Iris', avatar: '🌸' }
+            ],
+            cicd: [
+                { name: 'Caiven', avatar: '👨‍🔧' },
+                { name: 'Howard', avatar: '👨‍💻' }
+            ],
+            dashboard: [
+                { name: 'Danny', avatar: '📈' },
+                { name: 'Dora', avatar: '🐢' },
+                { name: 'Angel', avatar: '😇' },
+                { name: 'Charles', avatar: '👑' }
+            ],
+            codequality: [
+                { name: 'Linda', avatar: '👩‍🏫' },
+                { name: 'Emma', avatar: '📚' },
+                { name: 'Molly', avatar: '🐭' },
+                { name: 'Peter', avatar: '🐺' },
+                { name: 'Nevin', avatar: '🧙' }
+            ],
+            oss: [
+                { name: 'Victory', avatar: '🏆' }
+            ],
+            leaders: [
+                { name: 'Lili', avatar: '👩‍🚀' },
+                { name: 'Yancheng', avatar: '🧑‍🚀' }
+            ]
+        };
+
+        const allMembers = [
+            ...teamData.quality,
+            ...teamData.cicd,
+            ...teamData.dashboard,
+            ...teamData.codequality,
+            ...teamData.oss,
+            ...teamData.leaders
+        ];
+
+        // ==================== P2P Setup ====================
+        const urlParams = new URLSearchParams(window.location.search);
+        let roomId = urlParams.get('room');
+        
+        if (!roomId) {
+            roomId = 'QCC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            const url = new URL(window.location);
+            url.searchParams.set('room', roomId);
+            window.history.pushState({}, '', url);
+        }
+
+        document.getElementById('roomId').textContent = roomId;
+
+        const peerId = roomId + '-' + Math.random().toString(36).substring(2, 6);
+        
+        const peer = new Peer(peerId, {
+            host: 'peerjs-server.herokuapp.com',
+            secure: true,
+            port: 443,
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        });
+
+        // State
+        let loggedStatus = new Array(allMembers.length).fill(false);
+        let memberWishes = new Array(allMembers.length).fill('');
+        let launched = false;
+        let peers = {};
+        let peerCount = 0;
+        let pendingWishIndex = null;
+
+        // DOM elements
+        const loggedCountSpan = document.getElementById('loggedCount');
+        const totalCountSpan = document.getElementById('totalCount');
+        const progressFill = document.getElementById('progressFill');
+        const launchBtn = document.getElementById('launchBtn');
+        const engineLabel = document.getElementById('engineLabel');
+        const engineGlow = document.getElementById('engineGlow');
+        const toast = document.getElementById('toast');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const peerCountSpan = document.getElementById('peerCount');
+        const bridge = document.getElementById('bridge');
+        const crewDisplay = document.getElementById('crewDisplay');
+        const exploringUFO = document.getElementById('exploringUFO');
+        const warpEffect = document.getElementById('warpEffect');
+        const crewOnUFO = document.getElementById('crewOnUFO');
+        
+        // Wish dialog elements
+        const wishDialog = document.getElementById('wishDialog');
+        const wishMemberName = document.getElementById('wishMemberName');
+        const wishInput = document.getElementById('wishInput');
+        const wishSubmit = document.getElementById('wishSubmit');
+        const wishCancel = document.getElementById('wishCancel');
+        
+        // Wish list dialog elements
+        const wishListDialog = document.getElementById('wishListDialog');
+        const wishListContent = document.getElementById('wishListContent');
+        const wishListClose = document.getElementById('wishListClose');
+        const showWishListBtn = document.getElementById('showWishListBtn');
+        const exportWishesBtn = document.getElementById('exportWishesBtn');
+
+        totalCountSpan.textContent = allMembers.length;
+
+        // ==================== Wish List Functions ====================
+        function showWishList() {
+            // 生成愿望列表HTML
+            let html = '';
+            
+            // 先显示有愿望的成员
+            allMembers.forEach((member, index) => {
+                if (memberWishes[index] && memberWishes[index].trim()) {
+                    html += `
+                        <div class="wish-list-item">
+                            <div class="wish-item-avatar">${member.avatar}</div>
+                            <div class="wish-item-info">
+                                <div class="wish-item-name">${member.name}</div>
+                                <div class="wish-item-text">"${memberWishes[index]}"</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            // 再显示还没有愿望的成员
+            allMembers.forEach((member, index) => {
+                if (!memberWishes[index] || !memberWishes[index].trim()) {
+                    html += `
+                        <div class="wish-list-item" style="opacity: 0.6;">
+                            <div class="wish-item-avatar">${member.avatar}</div>
+                            <div class="wish-item-info">
+                                <div class="wish-item-name">${member.name}</div>
+                                <div class="wish-item-text wish-item-empty">✨ 还没写下愿望</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            wishListContent.innerHTML = html;
+            wishListDialog.classList.add('visible');
+        }
+
+        function hideWishList() {
+            wishListDialog.classList.remove('visible');
+        }
+
+        function exportWishesAsHTML() {
+            // 创建日期时间字符串
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0,10).replace(/-/g,'');
+            const timeStr = now.toTimeString().slice(0,8).replace(/:/g,'');
+            
+            // 生成漂亮的HTML内容
+            let htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>QCC 星际愿望 · 2026</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0f2e, #000000);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 40px 20px;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #ffd966;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #ffaa00;
+        }
+        .subtitle {
+            text-align: center;
+            color: #b3e4ff;
+            font-size: 1.4rem;
+            margin-bottom: 40px;
+            text-shadow: 0 0 10px cyan;
+        }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid #4ae0ff;
+            border-radius: 30px;
+            padding: 20px 40px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            color: #ffd966;
+            font-weight: bold;
+        }
+        .stat-label {
+            color: white;
+            font-size: 1.1rem;
+        }
+        .wish-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .wish-card {
+            background: rgba(20, 40, 60, 0.8);
+            border: 2px solid #b87cff;
+            border-radius: 30px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s;
+        }
+        .wish-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px #b87cff;
+        }
+        .wish-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .wish-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #2a4a6a, #1a2f4a);
+            border: 3px solid #ffd966;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        .wish-name {
+            font-size: 1.4rem;
+            color: #ffd966;
+            font-weight: bold;
+        }
+        .wish-text {
+            color: white;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            border-left: 4px solid #4ae0ff;
+        }
+        .wish-empty {
+            color: #999;
+            font-style: italic;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            color: #b3e4ff;
+            border-top: 2px solid #4ae0ff;
+            font-size: 1.2rem;
+        }
+        .footer .year {
+            color: #ffd966;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .timestamp {
+            color: #888;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛸 QCC 星际愿望 · 2026</h1>
+        <div class="subtitle">Let's explore the Quality Enabler journey together</div>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-number">${loggedStatus.filter(v => v).length}</div>
+                <div class="stat-label">已许愿船员</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">${allMembers.length}</div>
+                <div class="stat-label">总船员数</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">${new Date().toLocaleDateString()}</div>
+                <div class="stat-label">愿望收集日</div>
+            </div>
+        </div>
+        
+        <div class="wish-grid">`;
+            
+            // 添加每个成员的愿望卡片
+            allMembers.forEach((member, index) => {
+                const wish = memberWishes[index] && memberWishes[index].trim() 
+                    ? memberWishes[index] 
+                    : '✨ 还没有写下愿望';
+                const emptyClass = !memberWishes[index] || !memberWishes[index].trim() ? 'wish-empty' : '';
+                
+                htmlContent += `
+            <div class="wish-card">
+                <div class="wish-header">
+                    <div class="wish-avatar">${member.avatar}</div>
+                    <div class="wish-name">${member.name}</div>
+                </div>
+                <div class="wish-text ${emptyClass}">${wish}</div>
+            </div>`;
+            });
+            
+            htmlContent += `
+        </div>
+        
+        <div class="footer">
+            🌌 愿所有愿望在 <span class="year">2026</span> 的星际旅程中实现<br>
+            <div class="timestamp">导出时间: ${now.toLocaleString()}</div>
+        </div>
+    </div>
+</body>
+</html>`;
+            
+            // 创建下载链接
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `QCC_Wishes_${dateStr}_${timeStr}.html`;
+            link.click();
+            
+            showToast(`📥 愿望已导出为HTML文件`);
+        }
+
+        // ==================== Wish Dialog Logic ====================
+        function showWishDialog(index) {
+            if (launched) {
+                showToast('🛸 Expedition already launched');
+                return;
+            }
+            
+            const member = allMembers[index];
+            pendingWishIndex = index;
+            wishMemberName.textContent = `${member.avatar} ${member.name}`;
+            wishInput.value = memberWishes[index] || '';
+            wishInput.focus();
+            wishDialog.classList.add('visible');
+        }
+
+        function hideWishDialog() {
+            wishDialog.classList.remove('visible');
+            pendingWishIndex = null;
+        }
+
+        wishSubmit.addEventListener('click', () => {
+            if (pendingWishIndex === null) return;
+            
+            const wish = wishInput.value.trim();
+            if (!wish) {
+                showToast('✨ Please write your wish first');
+                return;
+            }
+            
+            const index = pendingWishIndex;
+            const member = allMembers[index];
+            
+            // 保存愿望
+            memberWishes[index] = wish;
+            
+            // 标记为已登录
+            loggedStatus[index] = true;
+            
+            // 更新UI
+            updateUIFromState();
+            
+            // 广播状态
+            broadcastState();
+            
+            hideWishDialog();
+            showToast(`✨ ${member.name}'s wish recorded for the cosmos`);
+        });
+
+        wishCancel.addEventListener('click', hideWishDialog);
+
+        // 点击对话框外部关闭
+        wishDialog.addEventListener('click', (e) => {
+            if (e.target === wishDialog) {
+                hideWishDialog();
+            }
+        });
+
+        // 按ESC关闭
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (wishDialog.classList.contains('visible')) {
+                    hideWishDialog();
+                }
+                if (wishListDialog.classList.contains('visible')) {
+                    hideWishList();
+                }
+            }
+        });
+
+        // ==================== Wish List Event Listeners ====================
+        showWishListBtn.addEventListener('click', showWishList);
+        wishListClose.addEventListener('click', hideWishList);
+        
+        // 点击对话框外部关闭
+        wishListDialog.addEventListener('click', (e) => {
+            if (e.target === wishListDialog) {
+                hideWishList();
+            }
+        });
+
+        exportWishesBtn.addEventListener('click', exportWishesAsHTML);
+
+        // ==================== Peer Events ====================
+        peer.on('open', (id) => {
+            statusDot.classList.add('connected');
+            statusText.textContent = 'Connected to cosmic network';
+            connectToRoom();
+        });
+
+        peer.on('connection', (conn) => {
+            setupConnection(conn);
+        });
+
+        peer.on('error', (err) => {
+            console.log('Peer error:', err);
+            statusText.textContent = 'Reconnecting to cosmos...';
+        });
+
+        function connectToRoom() {
+            setTimeout(() => {
+                broadcastState();
+            }, 1000);
+        }
+
+        function setupConnection(conn) {
+            const peerId = conn.peer;
+            
+            conn.on('open', () => {
+                peers[peerId] = conn;
+                updatePeerCount();
+                
+                conn.send({
+                    type: 'sync',
+                    state: loggedStatus,
+                    wishes: memberWishes,
+                    launched: launched
+                });
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'sync') {
+                    // 合并登录状态和愿望
+                    const incomingLoggedCount = data.state.filter(v => v).length;
+                    const currentLoggedCount = loggedStatus.filter(v => v).length;
+                    
+                    if (incomingLoggedCount > currentLoggedCount) {
+                        loggedStatus = data.state;
+                        if (data.wishes) {
+                            memberWishes = data.wishes;
+                        }
+                    }
+                    
+                    if (data.launched && !launched) {
+                        performLaunchEffect(true);
+                    }
+                    
+                    updateUIFromState();
+                    broadcastState();
+                }
+            });
+
+            conn.on('close', () => {
+                delete peers[peerId];
+                updatePeerCount();
+            });
+        }
+
+        function broadcastState() {
+            const message = {
+                type: 'sync',
+                state: loggedStatus,
+                wishes: memberWishes,
+                launched: launched
+            };
+            
+            Object.values(peers).forEach(conn => {
+                if (conn.open) {
+                    conn.send(message);
+                }
+            });
+        }
+
+        function updatePeerCount() {
+            peerCount = Object.keys(peers).length;
+            peerCountSpan.textContent = `👽 Cosmic Peers: ${peerCount}`;
+        }
+
+        // ==================== Render Team ====================
+        function renderTeam() {
+            // Quality Review
+            const qualityContainer = document.getElementById('topic-quality');
+            teamData.quality.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                qualityContainer.appendChild(createCrewCard(member, globalIndex));
+            });
+
+            // CI/CD
+            const cicdContainer = document.getElementById('topic-cicd');
+            teamData.cicd.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                cicdContainer.appendChild(createCrewCard(member, globalIndex));
+            });
+
+            // Dashboard
+            const dashboardContainer = document.getElementById('topic-dashboard');
+            teamData.dashboard.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                dashboardContainer.appendChild(createCrewCard(member, globalIndex));
+            });
+
+            // Code Quality
+            const codequalityContainer = document.getElementById('topic-codequality');
+            teamData.codequality.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                codequalityContainer.appendChild(createCrewCard(member, globalIndex));
+            });
+
+            // OSS
+            const ossContainer = document.getElementById('topic-oss');
+            teamData.oss.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                ossContainer.appendChild(createCrewCard(member, globalIndex));
+            });
+
+            // Leaders
+            const leaderContainer = document.getElementById('leader-container');
+            teamData.leaders.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                const card = document.createElement('div');
+                card.className = `leader-card ${loggedStatus[globalIndex] ? 'logged' : ''}`;
+                card.dataset.index = globalIndex;
+
+                card.innerHTML = `
+                    <div class="avatar">${member.avatar}</div>
+                    <div class="leader-name">${member.name}</div>
+                `;
+
+                card.addEventListener('click', () => {
+                    showWishDialog(globalIndex);
+                });
+
+                leaderContainer.appendChild(card);
+            });
+        }
+
+        function createCrewCard(member, globalIndex) {
+            const card = document.createElement('div');
+            card.className = `crew-card ${loggedStatus[globalIndex] ? 'logged' : ''}`;
+            card.dataset.index = globalIndex;
+
+            card.innerHTML = `
+                <div class="avatar">${member.avatar}</div>
+                <div class="crew-name">${member.name}</div>
+            `;
+
+            card.addEventListener('click', () => {
+                showWishDialog(globalIndex);
+            });
+
+            return card;
+        }
+
+        function updateUIFromState() {
+            // Update crew cards
+            document.querySelectorAll('.crew-card').forEach((card) => {
+                const idx = card.dataset.index;
+                if (idx !== undefined && loggedStatus[parseInt(idx)]) {
+                    card.classList.add('logged');
+                } else if (idx !== undefined) {
+                    card.classList.remove('logged');
+                }
+            });
+
+            // Update leader cards
+            document.querySelectorAll('.leader-card').forEach((card) => {
+                const idx = card.dataset.index;
+                if (idx !== undefined && loggedStatus[parseInt(idx)]) {
+                    card.classList.add('logged');
+                } else {
+                    card.classList.remove('logged');
+                }
+            });
+
+            const loggedCount = loggedStatus.filter(v => v).length;
+            loggedCountSpan.textContent = loggedCount;
+            const percent = (loggedCount / allMembers.length) * 100;
+            progressFill.style.width = percent + '%';
+
+            const allLogged = loggedCount === allMembers.length;
+            if (allLogged) {
+                engineLabel.innerText = '🌀 Quantum Drive · Primed';
+                engineLabel.style.color = '#b3ffb3';
+                engineGlow.classList.add('primed');
+                launchBtn.classList.add('active');
+            } else {
+                engineLabel.innerText = '🌀 Quantum Drive · Standby';
+                engineLabel.style.color = '#9bc7ff';
+                engineGlow.classList.remove('primed');
+                launchBtn.classList.remove('active');
+            }
+        }
+
+        function performLaunchEffect(fromSync = false) {
+            launched = true;
+            
+            // 1. 所有船员卡片渐出到宇宙
+            const cards = document.querySelectorAll('.crew-card, .leader-card');
+            cards.forEach(card => {
+                card.classList.add('exiting');
+                card.style.pointerEvents = 'none';
+            });
+            
+            // 2. 收集所有已登录的船员及其愿望
+            const loggedMembers = [];
+            allMembers.forEach((member, index) => {
+                if (loggedStatus[index]) {
+                    loggedMembers.push({
+                        ...member,
+                        wish: memberWishes[index] || 'To the stars!'
+                    });
+                }
+            });
+            
+            // 3. 在UFO上显示所有已登录的船员（向下移动避免挡住QCC）
+            crewOnUFO.innerHTML = '';
+            loggedMembers.forEach(member => {
+                const crewEl = document.createElement('div');
+                crewEl.className = 'ufo-crew-member';
+                crewEl.textContent = member.avatar;
+                crewEl.setAttribute('data-wish', member.wish);
+                crewOnUFO.appendChild(crewEl);
+            });
+            
+            // 4. 控制台渐出
+            bridge.classList.add('fade-out');
+            
+            // 5. 显示探索UFO
+            setTimeout(() => {
+                exploringUFO.classList.add('visible');
+                
+                // 6. 曲速特效
+                warpEffect.style.opacity = '1';
+                
+                // 7. 不断改变UFO位置，模拟探索宇宙
+                let angle = 0;
+                const exploreInterval = setInterval(() => {
+                    if (!exploringUFO.classList.contains('visible')) {
+                        clearInterval(exploreInterval);
+                        return;
+                    }
+                    
+                    angle += 0.02;
+                    const x = Math.sin(angle) * 50;
+                    const y = Math.cos(angle * 1.3) * 30;
+                    const scale = 1 + Math.sin(angle * 2) * 0.05;
+                    const rotate = Math.sin(angle) * 5;
+                    
+                    exploringUFO.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${scale}) rotate(${rotate}deg)`;
+                }, 50);
+                
+                // 8. 创建探索的星星轨迹
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        createStarTrail();
+                    }, i * 100);
+                }
+                
+                // 9. 持续创建星星轨迹
+                const starInterval = setInterval(() => {
+                    if (!exploringUFO.classList.contains('visible')) {
+                        clearInterval(starInterval);
+                        return;
+                    }
+                    createStarTrail();
+                }, 300);
+            }, 1500);
+            
+            if (!fromSync) {
+                broadcastState();
+                showToast(`🛸 Expedition launched! ${loggedMembers.length} wishes carried to the stars`);
+            }
+        }
+
+        function createStarTrail() {
+            const trail = document.createElement('div');
+            trail.style.position = 'fixed';
+            trail.style.left = Math.random() * 100 + '%';
+            trail.style.top = Math.random() * 100 + '%';
+            trail.style.width = '4px';
+            trail.style.height = '4px';
+            trail.style.background = 'white';
+            trail.style.borderRadius = '50%';
+            trail.style.boxShadow = '0 0 20px cyan, 0 0 40px blue';
+            trail.style.zIndex = '500';
+            trail.style.animation = 'starTrail 2s forwards';
+            document.body.appendChild(trail);
+            
+            setTimeout(() => trail.remove(), 2000);
+        }
+
+        // 添加星星轨迹动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes starTrail {
+                0% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(3) translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        function showToast(message) {
+            toast.style.opacity = '1';
+            toast.textContent = message;
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        // ==================== Initialize ====================
+        renderTeam();
+        updateUIFromState();
+        
+        launchBtn.addEventListener('click', () => {
+            const loggedCount = loggedStatus.filter(v => v).length;
+            
+            if (loggedCount === 0) {
+                showToast('🌌 At least one explorer must make a wish');
+                return;
+            }
+            
+            if (launched) {
+                showToast('🛸 Already exploring the cosmos');
+                return;
+            }
+
+            if (loggedCount < allMembers.length) {
+                if (!confirm('Some wishes haven\'t been cast. Begin expedition anyway?')) {
+                    return;
+                }
+            }
+            
+            performLaunchEffect(false);
+        });
+    </script>
+</body>
+</html>
