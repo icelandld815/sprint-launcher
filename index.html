@@ -1372,7 +1372,7 @@
 
         // ==================== P2P Setup ====================
         const urlParams = new URLSearchParams(window.location.search);
-        let roomId = urlParams.get('room');
+        let roomId = urlParams.get('sprint');
         
         if (!roomId) {
             roomId = 'QCC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
