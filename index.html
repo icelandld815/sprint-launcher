@@ -152,6 +152,8 @@
             gap: 20px;
             align-items: center;
             backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .connection-status {
@@ -173,6 +175,24 @@
             background: #44ff44;
             box-shadow: 0 0 20px #44ff44;
             animation: pulse 1.5s infinite;
+        }
+
+        .force-fallback-btn {
+            background: #ffaa00;
+            border: 2px solid #ffaa00;
+            color: black;
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        .force-fallback-btn:hover {
+            background: #ffc34d;
+            transform: scale(1.05);
         }
 
         @keyframes pulse {
@@ -1213,6 +1233,7 @@
             <div class="room-badge" id="roomDisplay">
                 🌌 Room: <span id="roomId">loading</span>
             </div>
+            <button class="force-fallback-btn" id="forceFallbackBtn">⚠️ Force Fallback</button>
         </div>
 
         <div class="header">
@@ -1389,6 +1410,7 @@
         const exploringUFO = document.getElementById('exploringUFO');
         const warpEffect = document.getElementById('warpEffect');
         const crewOnUFO = document.getElementById('crewOnUFO');
+        const forceFallbackBtn = document.getElementById('forceFallbackBtn');
         
         const wishDialog = document.getElementById('wishDialog');
         const wishMemberName = document.getElementById('wishMemberName');
@@ -1412,7 +1434,8 @@
         let fallbackMode = false;
         let fallbackInterval = null;
         let reconnectAttempts = 0;
-        const MAX_RECONNECT_ATTEMPTS = 5;
+        const MAX_RECONNECT_ATTEMPTS = 3; // reduced from 5 for faster fallback
+        const CONNECTION_TIMEOUT = 10000; // 10 seconds
 
         const PEER_SERVERS = [
             { host: '0.peerjs.com', port: 443, secure: true },
@@ -1462,7 +1485,7 @@
                 peer.destroy();
                 serverIndex++;
                 startPeerConnection();
-            }, 5000);
+            }, CONNECTION_TIMEOUT);
 
             peer.on('open', (id) => {
                 clearTimeout(masterTimeout);
@@ -1472,7 +1495,7 @@
                 statusText.textContent = 'Connected as room master';
                 setupMaster();
                 updatePeerCount(true);
-                // Send heartbeat to clients every 10 seconds to keep connections alive
+                // Send heartbeat every 10 seconds to keep connections alive
                 setInterval(() => {
                     if (isMaster && Object.keys(clientConns).length > 0) {
                         broadcastHeartbeat();
@@ -1502,7 +1525,7 @@
                 peer.destroy();
                 serverIndex++;
                 startPeerConnection();
-            }, 5000);
+            }, CONNECTION_TIMEOUT);
 
             peer.on('open', (id) => {
                 clearTimeout(clientTimeout);
@@ -1524,13 +1547,12 @@
                         console.warn('Connection to master timed out');
                         masterConn = null;
                         retryClientConnection(server);
-                    }, 5000);
+                    }, CONNECTION_TIMEOUT);
 
                     masterConn.on('open', () => {
                         clearTimeout(connTimeout);
                         console.log('Connected to master');
                         statusText.textContent = 'Connected to room master';
-                        // Send our state
                         masterConn.send({
                             type: 'sync',
                             state: loggedStatus,
@@ -1550,7 +1572,7 @@
                         masterConn = null;
                         retryClientConnection(server);
                     });
-                }, 500); // short delay
+                }, 500);
             });
 
             peer.on('error', (err) => {
@@ -1598,7 +1620,7 @@
                 console.warn('Connection to master timed out');
                 masterConn = null;
                 retryClientConnection(server);
-            }, 5000);
+            }, CONNECTION_TIMEOUT);
 
             conn.on('open', () => {
                 clearTimeout(connTimeout);
@@ -1731,8 +1753,12 @@
             fallbackMode = true;
             statusDot.classList.remove('connected');
             statusDot.style.background = '#ffaa00';
-            statusText.textContent = 'Using fallback – share URL to sync';
+            statusText.textContent = 'Fallback: share URL to sync';
             peerCountSpan.textContent = '👽 Fallback mode';
+
+            // Remove any existing copy button to avoid duplicates
+            const oldBtn = document.querySelector('.connection-bar .fallback-copy-btn');
+            if (oldBtn) oldBtn.remove();
 
             const copyBtn = document.createElement('button');
             copyBtn.innerHTML = '📋 Copy Share Link';
@@ -1744,6 +1770,7 @@
             copyBtn.style.borderRadius = '30px';
             copyBtn.style.cursor = 'pointer';
             copyBtn.style.marginLeft = '15px';
+            copyBtn.classList.add('fallback-copy-btn');
             document.querySelector('.connection-bar').appendChild(copyBtn);
 
             fallbackInterval = setInterval(() => {
@@ -1783,6 +1810,14 @@
             navigator.clipboard.writeText(url);
             showToast('✨ Link copied! Share it with your team');
         }
+
+        // ==================== Force Fallback Button ====================
+        forceFallbackBtn.addEventListener('click', () => {
+            if (peer && !peer.destroyed) {
+                peer.destroy();
+            }
+            enableFallbackMode();
+        });
 
         // ==================== Wish List Functions ====================
         function showWishList() {
