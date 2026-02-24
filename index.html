@@ -1327,7 +1327,7 @@
 
     <div id="toast" class="toast" style="opacity:0;">🌌 Sync established</div>
 
-    <script>
+  <script>
         // ==================== Team Data ====================
         const teamData = {
             quality: [
@@ -1370,40 +1370,31 @@
             ...teamData.leaders
         ];
 
-        // ==================== P2P Setup ====================
+        // ==================== P2P Setup with Master/Client ====================
         const urlParams = new URLSearchParams(window.location.search);
-        let roomId = urlParams.get('sprint');
+        let roomId = urlParams.get('room');
         
         if (!roomId) {
             roomId = 'QCC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
             const url = new URL(window.location);
-            url.searchParams.set('sprint', roomId);
+            url.searchParams.set('room', roomId);
             window.history.pushState({}, '', url);
         }
 
         document.getElementById('roomId').textContent = roomId;
 
-        const peerId = roomId + '-' + Math.random().toString(36).substring(2, 6);
-        
-        const peer = new Peer(peerId, {
-            host: '0.peerjs.com',
-            secure: true,
-            port: 443,
-            config: {
-                'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
-            }
-        });
+        // Peer and connection variables
+        let peer = null;
+        let isMaster = false;
+        let masterConn = null;          // for clients: connection to master
+        const clientConns = {};          // for master: connections from clients
+        let peerConnectionAttempt = 0;
+        const MAX_RETRIES = 3;
 
         // State
         let loggedStatus = new Array(allMembers.length).fill(false);
         let memberWishes = new Array(allMembers.length).fill('');
         let launched = false;
-        let peers = {};
-        let peerCount = 0;
-        let pendingWishIndex = null;
 
         // DOM elements
         const loggedCountSpan = document.getElementById('loggedCount');
@@ -1438,12 +1429,206 @@
 
         totalCountSpan.textContent = allMembers.length;
 
+        // ==================== Peer Initialization ====================
+        function initPeer() {
+            // ICE servers (STUN/TURN)
+            const iceServers = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    }
+                ]
+            };
+
+            // First, try to become master using the roomId as peer ID
+            statusText.textContent = 'Attempting to become master...';
+            peer = new Peer(roomId, {
+                host: '0.peerjs.com',      // using the working server
+                port: 443,
+                secure: true,
+                config: iceServers
+            });
+
+            peer.on('open', (id) => {
+                console.log('Successfully became master with id:', id);
+                isMaster = true;
+                statusDot.classList.add('connected');
+                statusText.textContent = 'Connected as room master';
+                setupMaster();
+                updatePeerCount();
+                // Broadcast initial state (in case someone joins later)
+            });
+
+            peer.on('error', (err) => {
+                console.log('Failed to become master:', err);
+                // Master ID taken – try as client
+                peer.destroy();
+                initClient();
+            });
+        }
+
+        function initClient() {
+            statusText.textContent = 'Connecting as client...';
+            // Generate a unique client ID
+            const clientId = roomId + '-' + Math.random().toString(36).substring(2, 10);
+            peer = new Peer(clientId, {
+                host: '0.peerjs.com',
+                port: 443,
+                secure: true,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' }
+                    ]
+                }
+            });
+
+            peer.on('open', (id) => {
+                console.log('Client connected with id:', id);
+                statusDot.classList.add('connected');
+                statusText.textContent = 'Connecting to master...';
+                // Connect to the master (which has ID = roomId)
+                masterConn = peer.connect(roomId);
+                masterConn.on('open', () => {
+                    console.log('Connected to master');
+                    statusText.textContent = 'Connected to room master';
+                    // Send our current state to master
+                    masterConn.send({
+                        type: 'sync',
+                        state: loggedStatus,
+                        wishes: memberWishes,
+                        launched: launched
+                    });
+                });
+                masterConn.on('data', handleMasterMessage);
+                masterConn.on('close', () => {
+                    console.log('Master disconnected, attempting to reconnect...');
+                    statusText.textContent = 'Master lost, reconnecting...';
+                    // Try to become master or reconnect
+                    peer.destroy();
+                    initPeer(); // retry from scratch
+                });
+                masterConn.on('error', (err) => {
+                    console.error('Master connection error:', err);
+                });
+                updatePeerCount();
+            });
+
+            peer.on('error', (err) => {
+                console.error('Client peer error:', err);
+                statusText.textContent = 'Connection error, retrying...';
+                setTimeout(() => {
+                    peer.destroy();
+                    initPeer();
+                }, 3000);
+            });
+        }
+
+        // Master setup: listen for incoming connections
+        function setupMaster() {
+            peer.on('connection', (conn) => {
+                const clientId = conn.peer;
+                console.log('Client connected:', clientId);
+                clientConns[clientId] = conn;
+                updatePeerCount();
+
+                conn.on('data', (data) => {
+                    if (data.type === 'sync') {
+                        // Merge client state
+                        mergeState(data);
+                        // Broadcast updated state to all clients (including sender)
+                        broadcastStateToAll();
+                    }
+                });
+
+                conn.on('close', () => {
+                    delete clientConns[clientId];
+                    updatePeerCount();
+                });
+
+                conn.on('error', (err) => {
+                    console.error('Client connection error:', err);
+                    delete clientConns[clientId];
+                    updatePeerCount();
+                });
+            });
+        }
+
+        // Merge incoming state (from client or master) with local state
+        function mergeState(data) {
+            if (data.state) {
+                data.state.forEach((val, idx) => {
+                    if (val) loggedStatus[idx] = true;
+                });
+            }
+            if (data.wishes) {
+                data.wishes.forEach((wish, idx) => {
+                    if (wish && wish.trim()) memberWishes[idx] = wish;
+                });
+            }
+            if (data.launched && !launched) {
+                performLaunchEffect(true);
+            }
+            updateUIFromState();
+        }
+
+        // Broadcast state to all connected clients (master only)
+        function broadcastStateToAll() {
+            const message = {
+                type: 'sync',
+                state: loggedStatus,
+                wishes: memberWishes,
+                launched: launched
+            };
+            Object.values(clientConns).forEach(conn => {
+                if (conn.open) conn.send(message);
+            });
+        }
+
+        // Handle messages from master (client only)
+        function handleMasterMessage(data) {
+            if (data.type === 'sync') {
+                mergeState(data);
+            }
+        }
+
+        // Unified broadcast function: called whenever local state changes
+        function broadcastState() {
+            if (isMaster) {
+                broadcastStateToAll();
+            } else {
+                if (masterConn && masterConn.open) {
+                    masterConn.send({
+                        type: 'sync',
+                        state: loggedStatus,
+                        wishes: memberWishes,
+                        launched: launched
+                    });
+                }
+            }
+        }
+
+        function updatePeerCount() {
+            if (isMaster) {
+                const count = Object.keys(clientConns).length + 1; // +1 for master
+                peerCountSpan.textContent = `👽 Crew: ${count}`;
+            } else {
+                peerCountSpan.textContent = '👽 Connected to master';
+            }
+        }
+
         // ==================== Wish List Functions ====================
+        // (Keep the same as original – no changes needed)
         function showWishList() {
-            // 生成愿望列表HTML
             let html = '';
-            
-            // 先显示有愿望的成员
             allMembers.forEach((member, index) => {
                 if (memberWishes[index] && memberWishes[index].trim()) {
                     html += `
@@ -1457,8 +1642,6 @@
                     `;
                 }
             });
-            
-            // 再显示还没有愿望的成员
             allMembers.forEach((member, index) => {
                 if (!memberWishes[index] || !memberWishes[index].trim()) {
                     html += `
@@ -1472,7 +1655,6 @@
                     `;
                 }
             });
-            
             wishListContent.innerHTML = html;
             wishListDialog.classList.add('visible');
         }
@@ -1482,12 +1664,10 @@
         }
 
         function exportWishesAsHTML() {
-            // 创建日期时间字符串
             const now = new Date();
             const dateStr = now.toISOString().slice(0,10).replace(/-/g,'');
             const timeStr = now.toTimeString().slice(0,8).replace(/:/g,'');
             
-            // 生成漂亮的HTML内容
             let htmlContent = `<!DOCTYPE html>
 <html>
 <head>
@@ -1639,7 +1819,6 @@
         
         <div class="wish-grid">`;
             
-            // 添加每个成员的愿望卡片
             allMembers.forEach((member, index) => {
                 const wish = memberWishes[index] && memberWishes[index].trim() 
                     ? memberWishes[index] 
@@ -1667,7 +1846,6 @@
 </body>
 </html>`;
             
-            // 创建下载链接
             const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -1709,17 +1887,11 @@
             const index = pendingWishIndex;
             const member = allMembers[index];
             
-            // 保存愿望
             memberWishes[index] = wish;
-            
-            // 标记为已登录
             loggedStatus[index] = true;
             
-            // 更新UI
             updateUIFromState();
-            
-            // 广播状态
-            broadcastState();
+            broadcastState();   // sync changes
             
             hideWishDialog();
             showToast(`✨ ${member.name}'s wish recorded for the cosmos`);
@@ -1727,14 +1899,12 @@
 
         wishCancel.addEventListener('click', hideWishDialog);
 
-        // 点击对话框外部关闭
         wishDialog.addEventListener('click', (e) => {
             if (e.target === wishDialog) {
                 hideWishDialog();
             }
         });
 
-        // 按ESC关闭
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 if (wishDialog.classList.contains('visible')) {
@@ -1749,100 +1919,12 @@
         // ==================== Wish List Event Listeners ====================
         showWishListBtn.addEventListener('click', showWishList);
         wishListClose.addEventListener('click', hideWishList);
-        
-        // 点击对话框外部关闭
         wishListDialog.addEventListener('click', (e) => {
             if (e.target === wishListDialog) {
                 hideWishList();
             }
         });
-
         exportWishesBtn.addEventListener('click', exportWishesAsHTML);
-
-        // ==================== Peer Events ====================
-        peer.on('open', (id) => {
-            statusDot.classList.add('connected');
-            statusText.textContent = 'Connected to network';
-            connectToRoom();
-        });
-
-        peer.on('connection', (conn) => {
-            setupConnection(conn);
-        });
-
-        peer.on('error', (err) => {
-            console.log('Peer error:', err);
-            statusText.textContent = 'Reconnecting...';
-        });
-
-        function connectToRoom() {
-            setTimeout(() => {
-                broadcastState();
-            }, 1000);
-        }
-
-        function setupConnection(conn) {
-            const peerId = conn.peer;
-            
-            conn.on('open', () => {
-                peers[peerId] = conn;
-                updatePeerCount();
-                
-                conn.send({
-                    type: 'sync',
-                    state: loggedStatus,
-                    wishes: memberWishes,
-                    launched: launched
-                });
-            });
-
-            conn.on('data', (data) => {
-                if (data.type === 'sync') {
-                    // 合并登录状态和愿望
-                    const incomingLoggedCount = data.state.filter(v => v).length;
-                    const currentLoggedCount = loggedStatus.filter(v => v).length;
-                    
-                    if (incomingLoggedCount > currentLoggedCount) {
-                        loggedStatus = data.state;
-                        if (data.wishes) {
-                            memberWishes = data.wishes;
-                        }
-                    }
-                    
-                    if (data.launched && !launched) {
-                        performLaunchEffect(true);
-                    }
-                    
-                    updateUIFromState();
-                    broadcastState();
-                }
-            });
-
-            conn.on('close', () => {
-                delete peers[peerId];
-                updatePeerCount();
-            });
-        }
-
-        function broadcastState() {
-            const message = {
-                type: 'sync',
-                state: loggedStatus,
-                wishes: memberWishes,
-                launched: launched
-            };
-            
-            Object.values(peers).forEach(conn => {
-                if (conn.open) {
-                    conn.send(message);
-                }
-            });
-        }
-
-        function updatePeerCount() {
-            peerCount = Object.keys(peers).length;
-            peerCountSpan.textContent = `👽 Peers: ${peerCount}`;
-        }
 
         // ==================== Render Team ====================
         function renderTeam() {
@@ -1920,7 +2002,6 @@
         }
 
         function updateUIFromState() {
-            // Update crew cards
             document.querySelectorAll('.crew-card').forEach((card) => {
                 const idx = card.dataset.index;
                 if (idx !== undefined && loggedStatus[parseInt(idx)]) {
@@ -1930,7 +2011,6 @@
                 }
             });
 
-            // Update leader cards
             document.querySelectorAll('.leader-card').forEach((card) => {
                 const idx = card.dataset.index;
                 if (idx !== undefined && loggedStatus[parseInt(idx)]) {
@@ -1959,17 +2039,16 @@
             }
         }
 
+        // ==================== Launch Effect ====================
         function performLaunchEffect(fromSync = false) {
             launched = true;
             
-            // 1. 所有船员卡片渐出到宇宙
             const cards = document.querySelectorAll('.crew-card, .leader-card');
             cards.forEach(card => {
                 card.classList.add('exiting');
                 card.style.pointerEvents = 'none';
             });
             
-            // 2. 收集所有已登录的船员及其愿望
             const loggedMembers = [];
             allMembers.forEach((member, index) => {
                 if (loggedStatus[index]) {
@@ -1980,7 +2059,6 @@
                 }
             });
             
-            // 3. 在UFO上显示所有已登录的船员（向下移动避免挡住QCC）
             crewOnUFO.innerHTML = '';
             loggedMembers.forEach(member => {
                 const crewEl = document.createElement('div');
@@ -1990,17 +2068,12 @@
                 crewOnUFO.appendChild(crewEl);
             });
             
-            // 4. 控制台渐出
             bridge.classList.add('fade-out');
             
-            // 5. 显示探索UFO
             setTimeout(() => {
                 exploringUFO.classList.add('visible');
-                
-                // 6. 曲速特效
                 warpEffect.style.opacity = '1';
                 
-                // 7. 不断改变UFO位置，模拟探索宇宙
                 let angle = 0;
                 const exploreInterval = setInterval(() => {
                     if (!exploringUFO.classList.contains('visible')) {
@@ -2017,14 +2090,12 @@
                     exploringUFO.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${scale}) rotate(${rotate}deg)`;
                 }, 50);
                 
-                // 8. 创建探索的星星轨迹
                 for (let i = 0; i < 50; i++) {
                     setTimeout(() => {
                         createStarTrail();
                     }, i * 100);
                 }
                 
-                // 9. 持续创建星星轨迹
                 const starInterval = setInterval(() => {
                     if (!exploringUFO.classList.contains('visible')) {
                         clearInterval(starInterval);
@@ -2057,7 +2128,7 @@
             setTimeout(() => trail.remove(), 2000);
         }
 
-        // 添加星星轨迹动画
+        // Add star trail animation
         const style = document.createElement('style');
         style.textContent = `
             @keyframes starTrail {
@@ -2078,6 +2149,9 @@
         // ==================== Initialize ====================
         renderTeam();
         updateUIFromState();
+        
+        // Start peer connection
+        initPeer();
         
         launchBtn.addEventListener('click', () => {
             const loggedCount = loggedStatus.filter(v => v).length;
