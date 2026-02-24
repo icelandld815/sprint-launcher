@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UFO QCC · Wishes Expedition</title>
+    <title>UFO QCC · Cosmic Wishes Expedition</title>
     <!-- PeerJS for WebRTC -->
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
+        /* ========== DEEP SPACE STYLES ========== */
         * {
             margin: 0;
             padding: 0;
@@ -21,7 +22,6 @@
             position: relative;
         }
 
-        /* 深邃宇宙层 - 3D星云效果 */
         .universe {
             position: fixed;
             width: 100%;
@@ -109,7 +109,7 @@
             100% { transform: translate(-5%, -5%) scale(1.2); opacity: 0.5; }
         }
 
-        /* 主飞船控制台 */
+        /* ========== MAIN CONTROL BRIDGE ========== */
         .bridge {
             position: absolute;
             top: 50%;
@@ -221,7 +221,7 @@
             margin-bottom: 30px;
         }
 
-        /* UFO 展示区 */
+        /* ========== UFO DISPLAY ========== */
         .ufo-display {
             flex: 1.2;
             min-width: 350px;
@@ -353,7 +353,7 @@
             backdrop-filter: blur(5px);
         }
 
-        /* 船员区 */
+        /* ========== CREW SECTION ========== */
         .crew-display {
             flex: 2;
             background: rgba(0, 10, 20, 0.5);
@@ -498,6 +498,7 @@
             border: 1px solid #ffb347;
         }
 
+        /* ========== LAUNCH PANEL ========== */
         .launch-panel {
             display: flex;
             align-items: center;
@@ -609,7 +610,7 @@
             to { box-shadow: 0 0 100px #00ddff; }
         }
 
-        /* 愿望对话框 */
+        /* ========== WISH DIALOG ========== */
         .wish-dialog {
             position: fixed;
             top: 0;
@@ -729,7 +730,7 @@
             background: rgba(200, 200, 200, 0.3);
         }
 
-        /* 愿望列表对话框 */
+        /* ========== WISH LIST DIALOG ========== */
         .wish-list-dialog {
             position: fixed;
             top: 0;
@@ -910,7 +911,7 @@
             background: linear-gradient(145deg, #5a7a9a, #3a5a7a);
         }
 
-        /* 探索阶段的UFO - 带船员和QCC */
+        /* ========== EXPLORING UFO ========== */
         .exploring-ufo {
             position: fixed;
             top: 50%;
@@ -986,7 +987,7 @@
             padding: 0 20px;
             z-index: 3;
             pointer-events: none;
-            margin-top: 60px; /* 向下移动，避免挡住QCC */
+            margin-top: 60px;
         }
 
         .ufo-crew-member {
@@ -1009,7 +1010,6 @@
             pointer-events: auto;
         }
 
-        /* 愿望提示框 */
         .ufo-crew-member[data-wish] {
             position: relative;
         }
@@ -1052,7 +1052,6 @@
             50% { transform: translateY(-10px) rotate(5deg); }
         }
 
-        /* 为每个船员设置不同的动画延迟 */
         .ufo-crew-member:nth-child(odd) {
             animation-delay: 0.2s;
         }
@@ -1102,7 +1101,6 @@
             100% { opacity: 0; transform: scale(3) rotate(360deg); }
         }
 
-        /* 探索阶段的文字 */
         .explore-tagline {
             font-size: 2.2rem;
             font-weight: 300;
@@ -1155,21 +1153,9 @@
             .crew-on-ufo { margin-top: 40px; }
             .ufo-crew-member { width: 40px; height: 40px; font-size: 1.2rem; }
             .explore-tagline { font-size: 1.5rem; padding: 10px 20px; }
-            
-            .ufo-crew-member:hover::before {
-                font-size: 0.8rem;
-                padding: 5px 10px;
-                top: -50px;
-            }
-            
-            .launch-panel {
-                flex-direction: column;
-            }
-            
-            .action-buttons {
-                width: 100%;
-                justify-content: center;
-            }
+            .ufo-crew-member:hover::before { font-size: 0.8rem; padding: 5px 10px; top: -50px; }
+            .launch-panel { flex-direction: column; }
+            .action-buttons { width: 100%; justify-content: center; }
         }
     </style>
 </head>
@@ -1222,10 +1208,10 @@
                 <span id="statusText">Connecting to cosmos...</span>
             </div>
             <div class="peer-count" id="peerCount">
-                👽 Peers: 0
+                👽 Cosmic Peers: 0
             </div>
             <div class="room-badge" id="roomDisplay">
-                🌌 Sprint: <span id="roomId">loading</span>
+                🌌 Room: <span id="roomId">loading</span>
             </div>
         </div>
 
@@ -1325,9 +1311,9 @@
         </div>
     </div>
 
-    <div id="toast" class="toast" style="opacity:0;">🌌 Sync established</div>
+    <div id="toast" class="toast" style="opacity:0;">🌌 Cosmic sync established</div>
 
-  <script>
+    <script>
         // ==================== Team Data ====================
         const teamData = {
             quality: [
@@ -1370,33 +1356,24 @@
             ...teamData.leaders
         ];
 
-        // ==================== P2P Setup with Master/Client ====================
+        // ==================== Room ID ====================
         const urlParams = new URLSearchParams(window.location.search);
         let roomId = urlParams.get('room');
-        
         if (!roomId) {
             roomId = 'QCC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
             const url = new URL(window.location);
             url.searchParams.set('room', roomId);
             window.history.pushState({}, '', url);
         }
-
         document.getElementById('roomId').textContent = roomId;
 
-        // Peer and connection variables
-        let peer = null;
-        let isMaster = false;
-        let masterConn = null;          // for clients: connection to master
-        const clientConns = {};          // for master: connections from clients
-        let peerConnectionAttempt = 0;
-        const MAX_RETRIES = 3;
-
-        // State
+        // ==================== Global State ====================
         let loggedStatus = new Array(allMembers.length).fill(false);
         let memberWishes = new Array(allMembers.length).fill('');
         let launched = false;
+        let pendingWishIndex = null;
 
-        // DOM elements
+        // ==================== DOM Elements ====================
         const loggedCountSpan = document.getElementById('loggedCount');
         const totalCountSpan = document.getElementById('totalCount');
         const progressFill = document.getElementById('progressFill');
@@ -1413,14 +1390,12 @@
         const warpEffect = document.getElementById('warpEffect');
         const crewOnUFO = document.getElementById('crewOnUFO');
         
-        // Wish dialog elements
         const wishDialog = document.getElementById('wishDialog');
         const wishMemberName = document.getElementById('wishMemberName');
         const wishInput = document.getElementById('wishInput');
         const wishSubmit = document.getElementById('wishSubmit');
         const wishCancel = document.getElementById('wishCancel');
         
-        // Wish list dialog elements
         const wishListDialog = document.getElementById('wishListDialog');
         const wishListContent = document.getElementById('wishListContent');
         const wishListClose = document.getElementById('wishListClose');
@@ -1429,78 +1404,116 @@
 
         totalCountSpan.textContent = allMembers.length;
 
-        // ==================== Peer Initialization ====================
-        function initPeer() {
-            // ICE servers (STUN/TURN)
-            const iceServers = {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    {
-                        urls: 'turn:openrelay.metered.ca:80',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    }
-                ]
-            };
+        // ==================== PeerJS with Fallback ====================
+        let peer = null;
+        let isMaster = false;
+        let masterConn = null;
+        const clientConns = {};
+        let fallbackMode = false;
+        let fallbackInterval = null;
+        let connectionTimeout = null;
 
-            // First, try to become master using the roomId as peer ID
-            statusText.textContent = 'Attempting to become master...';
+        const PEER_SERVERS = [
+            { host: '0.peerjs.com', port: 443, secure: true },
+            { host: 'peerjs-server.herokuapp.com', port: 443, secure: true },
+            { host: 'peerjs.herokuapp.com', port: 443, secure: true }
+        ];
+        let serverIndex = 0;
+
+        const ICE_SERVERS = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ]
+        };
+
+        function startPeerConnection() {
+            if (serverIndex >= PEER_SERVERS.length) {
+                enableFallbackMode();
+                return;
+            }
+
+            const server = PEER_SERVERS[serverIndex];
+            statusText.textContent = `Connecting to ${server.host}...`;
+
             peer = new Peer(roomId, {
-                host: '0.peerjs.com',      // using the working server
-                port: 443,
-                secure: true,
-                config: iceServers
+                host: server.host,
+                port: server.port,
+                secure: server.secure,
+                config: ICE_SERVERS
             });
 
+            const masterTimeout = setTimeout(() => {
+                console.warn(`Timeout on ${server.host}`);
+                peer.destroy();
+                serverIndex++;
+                startPeerConnection();
+            }, 5000);
+
             peer.on('open', (id) => {
-                console.log('Successfully became master with id:', id);
+                clearTimeout(masterTimeout);
+                console.log('Became master on', server.host);
                 isMaster = true;
                 statusDot.classList.add('connected');
                 statusText.textContent = 'Connected as room master';
                 setupMaster();
-                updatePeerCount();
-                // Broadcast initial state (in case someone joins later)
             });
 
             peer.on('error', (err) => {
-                console.log('Failed to become master:', err);
-                // Master ID taken – try as client
+                clearTimeout(masterTimeout);
+                console.log(`Failed to become master on ${server.host}:`, err);
                 peer.destroy();
-                initClient();
+                connectAsClient(server);
             });
         }
 
-        function initClient() {
-            statusText.textContent = 'Connecting as client...';
-            // Generate a unique client ID
+        function connectAsClient(server) {
             const clientId = roomId + '-' + Math.random().toString(36).substring(2, 10);
             peer = new Peer(clientId, {
-                host: '0.peerjs.com',
-                port: 443,
-                secure: true,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' }
-                    ]
-                }
+                host: server.host,
+                port: server.port,
+                secure: server.secure,
+                config: ICE_SERVERS
             });
 
+            const clientTimeout = setTimeout(() => {
+                console.warn(`Client connection timeout on ${server.host}`);
+                peer.destroy();
+                serverIndex++;
+                startPeerConnection();
+            }, 5000);
+
             peer.on('open', (id) => {
-                console.log('Client connected with id:', id);
+                clearTimeout(clientTimeout);
+                console.log('Client connected to', server.host);
                 statusDot.classList.add('connected');
                 statusText.textContent = 'Connecting to master...';
-                // Connect to the master (which has ID = roomId)
+
                 masterConn = peer.connect(roomId);
+                const connTimeout = setTimeout(() => {
+                    console.warn('Could not connect to master, retrying...');
+                    peer.destroy();
+                    serverIndex++;
+                    startPeerConnection();
+                }, 5000);
+
                 masterConn.on('open', () => {
+                    clearTimeout(connTimeout);
                     console.log('Connected to master');
                     statusText.textContent = 'Connected to room master';
-                    // Send our current state to master
                     masterConn.send({
                         type: 'sync',
                         state: loggedStatus,
@@ -1508,61 +1521,57 @@
                         launched: launched
                     });
                 });
+
                 masterConn.on('data', handleMasterMessage);
                 masterConn.on('close', () => {
-                    console.log('Master disconnected, attempting to reconnect...');
-                    statusText.textContent = 'Master lost, reconnecting...';
-                    // Try to become master or reconnect
+                    console.log('Master disconnected, reconnecting...');
                     peer.destroy();
-                    initPeer(); // retry from scratch
+                    serverIndex = 0;
+                    startPeerConnection();
                 });
                 masterConn.on('error', (err) => {
                     console.error('Master connection error:', err);
                 });
-                updatePeerCount();
+
+                updatePeerCount(false);
             });
 
             peer.on('error', (err) => {
-                console.error('Client peer error:', err);
-                statusText.textContent = 'Connection error, retrying...';
-                setTimeout(() => {
-                    peer.destroy();
-                    initPeer();
-                }, 3000);
+                clearTimeout(clientTimeout);
+                console.error('Client error:', err);
+                peer.destroy();
+                serverIndex++;
+                startPeerConnection();
             });
         }
 
-        // Master setup: listen for incoming connections
         function setupMaster() {
             peer.on('connection', (conn) => {
                 const clientId = conn.peer;
                 console.log('Client connected:', clientId);
                 clientConns[clientId] = conn;
-                updatePeerCount();
+                updatePeerCount(true);
 
                 conn.on('data', (data) => {
                     if (data.type === 'sync') {
-                        // Merge client state
                         mergeState(data);
-                        // Broadcast updated state to all clients (including sender)
                         broadcastStateToAll();
                     }
                 });
 
                 conn.on('close', () => {
                     delete clientConns[clientId];
-                    updatePeerCount();
+                    updatePeerCount(true);
                 });
 
                 conn.on('error', (err) => {
                     console.error('Client connection error:', err);
                     delete clientConns[clientId];
-                    updatePeerCount();
+                    updatePeerCount(true);
                 });
             });
         }
 
-        // Merge incoming state (from client or master) with local state
         function mergeState(data) {
             if (data.state) {
                 data.state.forEach((val, idx) => {
@@ -1580,7 +1589,6 @@
             updateUIFromState();
         }
 
-        // Broadcast state to all connected clients (master only)
         function broadcastStateToAll() {
             const message = {
                 type: 'sync',
@@ -1593,15 +1601,14 @@
             });
         }
 
-        // Handle messages from master (client only)
         function handleMasterMessage(data) {
             if (data.type === 'sync') {
                 mergeState(data);
             }
         }
 
-        // Unified broadcast function: called whenever local state changes
         function broadcastState() {
+            if (fallbackMode) return;
             if (isMaster) {
                 broadcastStateToAll();
             } else {
@@ -1616,17 +1623,79 @@
             }
         }
 
-        function updatePeerCount() {
-            if (isMaster) {
-                const count = Object.keys(clientConns).length + 1; // +1 for master
+        function updatePeerCount(isMasterPeer) {
+            if (fallbackMode) {
+                peerCountSpan.textContent = '👽 Fallback mode';
+                return;
+            }
+            if (isMasterPeer) {
+                const count = Object.keys(clientConns).length + 1;
                 peerCountSpan.textContent = `👽 Crew: ${count}`;
             } else {
                 peerCountSpan.textContent = '👽 Connected to master';
             }
         }
 
+        // ==================== Fallback Mode ====================
+        function enableFallbackMode() {
+            if (fallbackMode) return;
+            fallbackMode = true;
+            statusDot.classList.remove('connected');
+            statusDot.style.background = '#ffaa00';
+            statusText.textContent = 'Using fallback – share URL to sync';
+            peerCountSpan.textContent = '👽 Fallback mode';
+
+            const copyBtn = document.createElement('button');
+            copyBtn.innerHTML = '📋 Copy Share Link';
+            copyBtn.onclick = copyShareableLink;
+            copyBtn.style.background = '#4a2b6e';
+            copyBtn.style.border = '2px solid #b87cff';
+            copyBtn.style.color = 'white';
+            copyBtn.style.padding = '5px 15px';
+            copyBtn.style.borderRadius = '30px';
+            copyBtn.style.cursor = 'pointer';
+            copyBtn.style.marginLeft = '15px';
+            document.querySelector('.connection-bar').appendChild(copyBtn);
+
+            fallbackInterval = setInterval(() => {
+                const state = {
+                    logged: loggedStatus,
+                    wishes: memberWishes,
+                    launched: launched
+                };
+                window.location.hash = btoa(JSON.stringify(state));
+            }, 2000);
+
+            window.addEventListener('hashchange', () => {
+                try {
+                    const hash = window.location.hash.substring(1);
+                    if (hash) {
+                        const state = JSON.parse(atob(hash));
+                        if (state.logged) loggedStatus = state.logged;
+                        if (state.wishes) memberWishes = state.wishes;
+                        if (state.launched && !launched) performLaunchEffect(true);
+                        updateUIFromState();
+                        showToast('🔄 State synced from URL');
+                    }
+                } catch (e) {}
+            });
+
+            showToast('📋 Fallback mode: use "Copy Link" button to share state');
+        }
+
+        function copyShareableLink() {
+            const state = {
+                logged: loggedStatus,
+                wishes: memberWishes,
+                launched: launched
+            };
+            const hash = btoa(JSON.stringify(state));
+            const url = window.location.href.split('#')[0] + '#' + hash;
+            navigator.clipboard.writeText(url);
+            showToast('✨ Link copied! Share it with your team');
+        }
+
         // ==================== Wish List Functions ====================
-        // (Keep the same as original – no changes needed)
         function showWishList() {
             let html = '';
             allMembers.forEach((member, index) => {
@@ -1891,7 +1960,7 @@
             loggedStatus[index] = true;
             
             updateUIFromState();
-            broadcastState();   // sync changes
+            broadcastState();
             
             hideWishDialog();
             showToast(`✨ ${member.name}'s wish recorded for the cosmos`);
@@ -1928,42 +1997,36 @@
 
         // ==================== Render Team ====================
         function renderTeam() {
-            // Quality Review
             const qualityContainer = document.getElementById('topic-quality');
             teamData.quality.forEach((member) => {
                 const globalIndex = allMembers.findIndex(m => m.name === member.name);
                 qualityContainer.appendChild(createCrewCard(member, globalIndex));
             });
 
-            // CI/CD
             const cicdContainer = document.getElementById('topic-cicd');
             teamData.cicd.forEach((member) => {
                 const globalIndex = allMembers.findIndex(m => m.name === member.name);
                 cicdContainer.appendChild(createCrewCard(member, globalIndex));
             });
 
-            // Dashboard
             const dashboardContainer = document.getElementById('topic-dashboard');
             teamData.dashboard.forEach((member) => {
                 const globalIndex = allMembers.findIndex(m => m.name === member.name);
                 dashboardContainer.appendChild(createCrewCard(member, globalIndex));
             });
 
-            // Code Quality
             const codequalityContainer = document.getElementById('topic-codequality');
             teamData.codequality.forEach((member) => {
                 const globalIndex = allMembers.findIndex(m => m.name === member.name);
                 codequalityContainer.appendChild(createCrewCard(member, globalIndex));
             });
 
-            // OSS
             const ossContainer = document.getElementById('topic-oss');
             teamData.oss.forEach((member) => {
                 const globalIndex = allMembers.findIndex(m => m.name === member.name);
                 ossContainer.appendChild(createCrewCard(member, globalIndex));
             });
 
-            // Leaders
             const leaderContainer = document.getElementById('leader-container');
             teamData.leaders.forEach((member) => {
                 const globalIndex = allMembers.findIndex(m => m.name === member.name);
@@ -2128,7 +2191,6 @@
             setTimeout(() => trail.remove(), 2000);
         }
 
-        // Add star trail animation
         const style = document.createElement('style');
         style.textContent = `
             @keyframes starTrail {
@@ -2149,10 +2211,8 @@
         // ==================== Initialize ====================
         renderTeam();
         updateUIFromState();
-        
-        // Start peer connection
-        initPeer();
-        
+        startPeerConnection();
+
         launchBtn.addEventListener('click', () => {
             const loggedCount = loggedStatus.filter(v => v).length;
             
