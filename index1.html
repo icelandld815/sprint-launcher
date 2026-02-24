@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UFO QCC · Cosmic Wishes (Firebase)</title>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <title>UFO QCC · Cosmic Wishes Expedition</title>
+    <!-- PeerJS for WebRTC -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        /* ---------- ALL YOUR EXISTING STYLES GO HERE ---------- */
-        /* (Copy the full <style> block from your previous version) */
+        /* ========== DEEP SPACE STYLES (unchanged) ========== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             min-height: 100vh;
             background: radial-gradient(ellipse at 20% 30%, #0a0f2e, #000000 90%);
@@ -22,12 +21,14 @@
             overflow: hidden;
             position: relative;
         }
+
         .universe {
             position: fixed;
             width: 100%;
             height: 100%;
             perspective: 1000px;
         }
+
         .stars-layer1 {
             position: absolute;
             width: 100%;
@@ -35,6 +36,7 @@
             background: transparent;
             animation: rotateStars 200s linear infinite;
         }
+
         .stars-layer1::before {
             content: '';
             position: absolute;
@@ -55,6 +57,7 @@
             opacity: 0.9;
             transform: rotateZ(15deg);
         }
+
         .stars-layer2 {
             position: absolute;
             width: 100%;
@@ -62,6 +65,7 @@
             background: transparent;
             animation: rotateStarsReverse 300s linear infinite;
         }
+
         .stars-layer2::before {
             content: '';
             position: absolute;
@@ -78,6 +82,7 @@
             background-repeat: repeat;
             transform: rotateZ(-10deg);
         }
+
         .nebula {
             position: absolute;
             width: 100%;
@@ -88,19 +93,23 @@
             filter: blur(40px);
             animation: nebulaDrift 60s ease-in-out infinite alternate;
         }
+
         @keyframes rotateStars {
             from { transform: rotate(0deg) scale(1); }
             to { transform: rotate(360deg) scale(1.5); }
         }
+
         @keyframes rotateStarsReverse {
             from { transform: rotate(0deg) scale(1.2); }
             to { transform: rotate(-360deg) scale(1.8); }
         }
+
         @keyframes nebulaDrift {
             0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
             100% { transform: translate(-5%, -5%) scale(1.2); opacity: 0.5; }
         }
-        /* ===== BRIDGE ===== */
+
+        /* ========== MAIN CONTROL BRIDGE ========== */
         .bridge {
             position: absolute;
             top: 50%;
@@ -118,11 +127,13 @@
             z-index: 100;
             transition: opacity 1.5s ease, transform 2s ease;
         }
+
         .bridge.fade-out {
             opacity: 0;
             transform: translate(-50%, -50%) scale(0.8);
             pointer-events: none;
         }
+
         .connection-bar {
             position: absolute;
             top: -20px;
@@ -144,18 +155,52 @@
             flex-wrap: wrap;
             justify-content: center;
         }
+
         .connection-status {
             display: flex;
             align-items: center;
             gap: 10px;
         }
+
         .status-dot {
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            background: #ffaa00;  /* yellow = Firebase mode */
-            box-shadow: 0 0 10px #ffaa00;
+            background: #ff4444;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px #ff4444;
         }
+
+        .status-dot.connected {
+            background: #44ff44;
+            box-shadow: 0 0 20px #44ff44;
+            animation: pulse 1.5s infinite;
+        }
+
+        .force-fallback-btn {
+            background: #ffaa00;
+            border: 2px solid #ffaa00;
+            color: black;
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        .force-fallback-btn:hover {
+            background: #ffc34d;
+            transform: scale(1.05);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
         .header {
             display: flex;
             align-items: center;
@@ -166,6 +211,7 @@
             border-bottom: 1px solid rgba(100, 180, 255, 0.3);
             padding-bottom: 20px;
         }
+
         .ship-name {
             font-size: 2.2rem;
             font-weight: 400;
@@ -174,10 +220,12 @@
             gap: 15px;
             text-shadow: 0 0 20px cyan;
         }
+
         .ship-name span {
             font-size: 3rem;
             filter: drop-shadow(0 0 20px #00c8ff);
         }
+
         .room-badge {
             background: linear-gradient(145deg, #2a1f4a, #1a2f5a);
             padding: 10px 25px;
@@ -186,11 +234,14 @@
             border: 1px solid #b87cff;
             box-shadow: 0 0 30px #b87cff;
         }
+
         .main-display {
             display: flex;
             gap: 30px;
             margin-bottom: 30px;
         }
+
+        /* ========== UFO DISPLAY ========== */
         .ufo-display {
             flex: 1.2;
             min-width: 350px;
@@ -201,6 +252,7 @@
             align-items: center;
             justify-content: center;
         }
+
         .ufo-container {
             position: relative;
             width: 100%;
@@ -212,11 +264,13 @@
             transform-style: preserve-3d;
             animation: ufoFloat 4s ease-in-out infinite;
         }
+
         @keyframes ufoFloat {
             0%, 100% { transform: translateY(0) rotate(0deg); }
             25% { transform: translateY(-10px) rotate(1deg); }
             75% { transform: translateY(10px) rotate(-1deg); }
         }
+
         .ufo-body {
             position: relative;
             width: 280px;
@@ -227,6 +281,7 @@
             box-shadow: 0 0 60px #00a6ff, inset 0 0 40px #4ae0ff;
             transform-style: preserve-3d;
         }
+
         .ufo-dome {
             position: absolute;
             top: -40px;
@@ -247,6 +302,7 @@
             color: rgba(255, 255, 255, 0.9);
             text-shadow: 0 0 20px white;
         }
+
         .ufo-ring {
             position: absolute;
             bottom: -15px;
@@ -259,11 +315,13 @@
             filter: blur(10px);
             animation: ringPulse 2s linear infinite;
         }
+
         @keyframes ringPulse {
             0% { opacity: 0.5; transform: translateX(-50%) scale(1); }
             50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
             100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
         }
+
         .ufo-beam {
             position: absolute;
             bottom: -100px;
@@ -276,10 +334,12 @@
             animation: beamPulse 3s ease-in-out infinite;
             pointer-events: none;
         }
+
         @keyframes beamPulse {
             0%, 100% { opacity: 0.3; transform: translateX(-50%) scaleY(1); }
             50% { opacity: 0.8; transform: translateX(-50%) scaleY(1.3); }
         }
+
         .engine-glow {
             position: absolute;
             bottom: 20px;
@@ -290,15 +350,18 @@
             opacity: 0.3;
             transition: opacity 0.5s;
         }
+
         .engine-glow.primed {
             opacity: 1;
             background: radial-gradient(ellipse, #ffaa33, #ff44aa, #44aaff);
             animation: engineThrob 1s infinite alternate;
         }
+
         @keyframes engineThrob {
             from { transform: scale(1); opacity: 0.8; }
             to { transform: scale(1.3); opacity: 1; }
         }
+
         .engine-status {
             margin-top: 20px;
             font-size: 1.2rem;
@@ -309,6 +372,8 @@
             border: 1px solid #00a6ff;
             backdrop-filter: blur(5px);
         }
+
+        /* ========== CREW SECTION ========== */
         .crew-display {
             flex: 2;
             background: rgba(0, 10, 20, 0.5);
@@ -318,9 +383,11 @@
             backdrop-filter: blur(10px);
             transition: opacity 1s;
         }
+
         .crew-display.fade-out {
             opacity: 0;
         }
+
         .topics-container {
             display: flex;
             flex-wrap: wrap;
@@ -328,6 +395,7 @@
             justify-content: center;
             margin-bottom: 20px;
         }
+
         .topic-section {
             flex: 1 1 160px;
             background: rgba(20, 40, 60, 0.6);
@@ -335,6 +403,7 @@
             padding: 15px 10px;
             border: 1px solid #5f9fc0;
         }
+
         .topic-title {
             color: #ffd966;
             font-size: 1.1rem;
@@ -345,12 +414,14 @@
             letter-spacing: 2px;
             text-shadow: 0 0 10px #ffaa00;
         }
+
         .topic-crew {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 12px;
         }
+
         .crew-card {
             display: flex;
             flex-direction: column;
@@ -360,17 +431,21 @@
             transition: all 0.3s ease;
             filter: brightness(0.6) drop-shadow(0 0 5px black);
         }
+
         .crew-card.logged {
             filter: brightness(1.3) drop-shadow(0 0 15px #4ae5ff);
             transform: translateY(-8px);
         }
+
         .crew-card.exiting {
             animation: exitToSpace 1.5s forwards;
         }
+
         @keyframes exitToSpace {
             0% { opacity: 1; transform: translateY(0) scale(1); }
             100% { opacity: 0; transform: translateY(-200px) scale(0.5) rotate(20deg); filter: blur(10px); }
         }
+
         .avatar {
             width: 55px;
             height: 55px;
@@ -383,10 +458,12 @@
             font-size: 2rem;
             transition: all 0.3s;
         }
+
         .crew-card.logged .avatar {
             border-color: #f0f9ff;
             box-shadow: 0 0 30px #0ae0ff;
         }
+
         .crew-name {
             margin-top: 5px;
             color: #cae1f2;
@@ -396,11 +473,13 @@
             border-radius: 30px;
             border: 1px solid #2f6991;
         }
+
         .crew-card.logged .crew-name {
             background: #2a5a7a;
             border-color: #7ac4ff;
             color: white;
         }
+
         .leaders-section {
             display: flex;
             justify-content: center;
@@ -408,6 +487,7 @@
             padding-top: 20px;
             border-top: 2px solid #4f8bb0;
         }
+
         .leader-card {
             display: flex;
             flex-direction: column;
@@ -415,16 +495,19 @@
             width: 100px;
             cursor: pointer;
         }
+
         .leader-card .avatar {
             width: 70px;
             height: 70px;
             border-color: #ffb347;
             font-size: 2.5rem;
         }
+
         .leader-card.logged .avatar {
             border-color: #ffdf7e;
             box-shadow: 0 0 40px #ffbf00;
         }
+
         .leader-name {
             margin-top: 8px;
             font-size: 1.1rem;
@@ -434,6 +517,8 @@
             border-radius: 30px;
             border: 1px solid #ffb347;
         }
+
+        /* ========== LAUNCH PANEL ========== */
         .launch-panel {
             display: flex;
             align-items: center;
@@ -447,10 +532,12 @@
             flex-wrap: wrap;
             gap: 15px;
         }
+
         .crew-count {
             color: #cdf2ff;
             font-size: 1.2rem;
         }
+
         .count-highlight {
             font-size: 2.4rem;
             font-weight: 700;
@@ -458,6 +545,7 @@
             text-shadow: 0 0 20px #1eb0ff;
             margin: 0 5px;
         }
+
         .progress-track {
             flex: 1;
             height: 16px;
@@ -467,6 +555,7 @@
             overflow: hidden;
             box-shadow: inset 0 2px 10px black;
         }
+
         .progress-fill {
             height: 100%;
             width: 0%;
@@ -475,11 +564,13 @@
             box-shadow: 0 0 30px #00d9ff;
             transition: width 0.3s ease;
         }
+
         .action-buttons {
             display: flex;
             gap: 15px;
             align-items: center;
         }
+
         .wish-list-btn {
             background: linear-gradient(145deg, #4a2b6e, #2a1f4a);
             border: 2px solid #b87cff;
@@ -496,11 +587,13 @@
             gap: 8px;
             white-space: nowrap;
         }
+
         .wish-list-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 0 50px #d49cff;
             background: linear-gradient(145deg, #5a3b8a, #3a2f6a);
         }
+
         .launch-btn {
             background: linear-gradient(145deg, #1a3f5a, #0a1f3a);
             border: 2px solid #48b5ff;
@@ -516,12 +609,14 @@
             text-transform: uppercase;
             white-space: nowrap;
         }
+
         .launch-btn.active {
             background: #0076b3;
             box-shadow: 0 0 80px #2ad4ff;
             transform: scale(1.05);
             animation: btnPulse 1s infinite alternate;
         }
+
         .launch-btn.launched {
             background: #4a2b6e;
             border-color: #c56bff;
@@ -529,10 +624,13 @@
             pointer-events: none;
             opacity: 0.7;
         }
+
         @keyframes btnPulse {
             from { box-shadow: 0 0 40px #0077ff; }
             to { box-shadow: 0 0 100px #00ddff; }
         }
+
+        /* ========== WISH DIALOG ========== */
         .wish-dialog {
             position: fixed;
             top: 0;
@@ -549,10 +647,12 @@
             pointer-events: none;
             transition: opacity 0.3s;
         }
+
         .wish-dialog.visible {
             opacity: 1;
             pointer-events: all;
         }
+
         .wish-card {
             width: 500px;
             max-width: 90vw;
@@ -564,9 +664,11 @@
             transform: scale(0.9);
             transition: transform 0.3s;
         }
+
         .wish-dialog.visible .wish-card {
             transform: scale(1);
         }
+
         .wish-title {
             font-size: 2.5rem;
             color: #ffd966;
@@ -574,12 +676,14 @@
             margin-bottom: 20px;
             text-shadow: 0 0 30px #ffaa00;
         }
+
         .wish-subtitle {
             font-size: 1.2rem;
             color: #b3e4ff;
             text-align: center;
             margin-bottom: 30px;
         }
+
         .wish-name {
             font-size: 2rem;
             color: white;
@@ -590,6 +694,7 @@
             border-radius: 50px;
             border: 1px solid cyan;
         }
+
         .wish-input {
             width: 100%;
             padding: 20px;
@@ -602,15 +707,18 @@
             resize: none;
             font-family: inherit;
         }
+
         .wish-input:focus {
             outline: none;
             box-shadow: 0 0 30px cyan;
         }
+
         .wish-buttons {
             display: flex;
             gap: 20px;
             justify-content: center;
         }
+
         .wish-btn {
             padding: 15px 40px;
             font-size: 1.3rem;
@@ -620,23 +728,29 @@
             transition: all 0.3s;
             font-weight: bold;
         }
+
         .wish-btn.submit {
             background: linear-gradient(145deg, #4ae0ff, #0077ff);
             color: white;
             box-shadow: 0 0 30px #00a6ff;
         }
+
         .wish-btn.submit:hover {
             transform: scale(1.1);
             box-shadow: 0 0 50px cyan;
         }
+
         .wish-btn.cancel {
             background: rgba(100, 100, 100, 0.3);
             color: #ccc;
             border: 1px solid #999;
         }
+
         .wish-btn.cancel:hover {
             background: rgba(200, 200, 200, 0.3);
         }
+
+        /* ========== WISH LIST DIALOG ========== */
         .wish-list-dialog {
             position: fixed;
             top: 0;
@@ -653,10 +767,12 @@
             pointer-events: none;
             transition: opacity 0.3s;
         }
+
         .wish-list-dialog.visible {
             opacity: 1;
             pointer-events: all;
         }
+
         .wish-list-card {
             width: 800px;
             max-width: 95vw;
@@ -672,9 +788,11 @@
             display: flex;
             flex-direction: column;
         }
+
         .wish-list-dialog.visible .wish-list-card {
             transform: scale(1);
         }
+
         .wish-list-header {
             display: flex;
             justify-content: space-between;
@@ -683,11 +801,13 @@
             padding-bottom: 20px;
             border-bottom: 2px solid #b87cff;
         }
+
         .wish-list-title {
             font-size: 2.5rem;
             color: #ffd966;
             text-shadow: 0 0 30px #ffaa00;
         }
+
         .wish-list-close {
             width: 50px;
             height: 50px;
@@ -702,26 +822,32 @@
             cursor: pointer;
             transition: all 0.3s;
         }
+
         .wish-list-close:hover {
             background: #b87cff;
             transform: scale(1.1);
         }
+
         .wish-list-content {
             overflow-y: auto;
             padding-right: 10px;
             max-height: 50vh;
         }
+
         .wish-list-content::-webkit-scrollbar {
             width: 10px;
         }
+
         .wish-list-content::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
         }
+
         .wish-list-content::-webkit-scrollbar-thumb {
             background: #b87cff;
             border-radius: 10px;
         }
+
         .wish-list-item {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid #4ae0ff;
@@ -733,11 +859,13 @@
             gap: 20px;
             transition: all 0.3s;
         }
+
         .wish-list-item:hover {
             background: rgba(100, 200, 255, 0.1);
             transform: translateX(10px);
             border-color: #ffd966;
         }
+
         .wish-item-avatar {
             width: 60px;
             height: 60px;
@@ -750,24 +878,29 @@
             font-size: 2rem;
             flex-shrink: 0;
         }
+
         .wish-item-info {
             flex: 1;
         }
+
         .wish-item-name {
             font-size: 1.4rem;
             color: #ffd966;
             margin-bottom: 5px;
             font-weight: bold;
         }
+
         .wish-item-text {
             font-size: 1.2rem;
             color: white;
             word-break: break-word;
         }
+
         .wish-item-empty {
             color: #999;
             font-style: italic;
         }
+
         .wish-list-footer {
             margin-top: 30px;
             padding-top: 20px;
@@ -776,6 +909,7 @@
             justify-content: flex-end;
             gap: 20px;
         }
+
         .export-btn {
             background: linear-gradient(145deg, #4a6a8a, #2a4a6a);
             border: 2px solid #4ae0ff;
@@ -790,11 +924,14 @@
             align-items: center;
             gap: 10px;
         }
+
         .export-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 0 40px #4ae0ff;
             background: linear-gradient(145deg, #5a7a9a, #3a5a7a);
         }
+
+        /* ========== EXPLORING UFO ========== */
         .exploring-ufo {
             position: fixed;
             top: 50%;
@@ -809,16 +946,19 @@
             align-items: center;
             gap: 40px;
         }
+
         .exploring-ufo.visible {
             opacity: 1;
             pointer-events: none;
         }
+
         .ufo-explore-wrapper {
             position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
         .ufo-explore {
             width: 600px;
             height: 220px;
@@ -829,6 +969,7 @@
             position: relative;
             animation: exploreFloat 4s ease-in-out infinite;
         }
+
         .ufo-explore::before {
             content: 'QCC';
             position: absolute;
@@ -852,6 +993,7 @@
             box-shadow: 0 0 60px #ffaa00;
             z-index: 2;
         }
+
         .crew-on-ufo {
             position: absolute;
             top: -30px;
@@ -867,6 +1009,7 @@
             pointer-events: none;
             margin-top: 60px;
         }
+
         .ufo-crew-member {
             width: 60px;
             height: 60px;
@@ -886,9 +1029,11 @@
             cursor: help;
             pointer-events: auto;
         }
+
         .ufo-crew-member[data-wish] {
             position: relative;
         }
+
         .ufo-crew-member:hover::before {
             content: attr(data-wish);
             position: absolute;
@@ -909,6 +1054,7 @@
             font-weight: 500;
             letter-spacing: 1px;
         }
+
         .ufo-crew-member:hover::after {
             content: '';
             position: absolute;
@@ -920,10 +1066,12 @@
             border-top: 10px solid #ffaa00;
             filter: drop-shadow(0 0 10px #ffaa00);
         }
+
         @keyframes crewOnUfo {
             0%, 100% { transform: translateY(0) rotate(0deg); }
             50% { transform: translateY(-10px) rotate(5deg); }
         }
+
         .ufo-crew-member:nth-child(odd) {
             animation-delay: 0.2s;
         }
@@ -933,6 +1081,7 @@
         .ufo-crew-member:nth-child(5n) {
             animation-delay: 0.8s;
         }
+
         .explore-beam {
             position: absolute;
             bottom: -300px;
@@ -944,15 +1093,18 @@
             filter: blur(50px);
             animation: exploreBeam 4s ease-in-out infinite;
         }
+
         @keyframes exploreFloat {
             0%, 100% { transform: translateY(0) rotate(0deg); }
             33% { transform: translateY(-30px) rotate(2deg); }
             66% { transform: translateY(20px) rotate(-2deg); }
         }
+
         @keyframes exploreBeam {
             0%, 100% { opacity: 0.3; transform: translateX(-50%) scaleY(1); }
             50% { opacity: 0.8; transform: translateX(-50%) scaleY(1.5); }
         }
+
         .warp-effect {
             position: absolute;
             width: 100%;
@@ -962,11 +1114,13 @@
             opacity: 0;
             animation: warpSpeed 3s forwards;
         }
+
         @keyframes warpSpeed {
             0% { opacity: 0; transform: scale(0.1) rotate(0deg); }
             50% { opacity: 1; transform: scale(2) rotate(180deg); }
             100% { opacity: 0; transform: scale(3) rotate(360deg); }
         }
+
         .explore-tagline {
             font-size: 2.2rem;
             font-weight: 300;
@@ -982,15 +1136,18 @@
             backdrop-filter: blur(10px);
             margin-top: 40px;
         }
+
         .explore-tagline .year {
             color: #ffd966;
             font-weight: 700;
             text-shadow: 0 0 30px #ffaa00;
         }
+
         @keyframes taglineGlow {
             0%, 100% { opacity: 0.9; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.02); text-shadow: 0 0 30px cyan, 0 0 60px blue; }
         }
+
         .toast {
             position: fixed;
             bottom: 30px;
@@ -1007,6 +1164,7 @@
             font-size: 1.2rem;
             white-space: nowrap;
         }
+
         @media (max-width: 1000px) {
             .main-display { flex-direction: column; }
             .ufo-display { height: 300px; }
@@ -1067,14 +1225,15 @@
         <div class="connection-bar">
             <div class="connection-status">
                 <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Connected</span>
+                <span id="statusText">Connecting to cosmos...</span>
             </div>
             <div class="peer-count" id="peerCount">
-                👽 Online: <span id="onlineCount">0</span>
+                👽 Cosmic Peers: 0
             </div>
             <div class="room-badge" id="roomDisplay">
                 🌌 Room: <span id="roomId">loading</span>
             </div>
+            <button class="force-fallback-btn" id="forceFallbackBtn">⚠️ Force Fallback</button>
         </div>
 
         <div class="header">
@@ -1104,32 +1263,40 @@
 
             <!-- 船员区 -->
             <div class="crew-display" id="crewDisplay">
+                <!-- 5个主题区域 -->
                 <div class="topics-container">
                     <div class="topic-section">
                         <div class="topic-title">🔍 Quality Review</div>
                         <div class="topic-crew" id="topic-quality"></div>
                     </div>
+                    
                     <div class="topic-section">
                         <div class="topic-title">⚙️ CI/CD</div>
                         <div class="topic-crew" id="topic-cicd"></div>
                     </div>
+                    
                     <div class="topic-section">
                         <div class="topic-title">📊 Dashboard</div>
                         <div class="topic-crew" id="topic-dashboard"></div>
                     </div>
+                    
                     <div class="topic-section">
                         <div class="topic-title">🧪 Code Quality</div>
                         <div class="topic-crew" id="topic-codequality"></div>
                     </div>
+                    
                     <div class="topic-section">
                         <div class="topic-title">🌐 OSS</div>
                         <div class="topic-crew" id="topic-oss"></div>
                     </div>
                 </div>
+                
+                <!-- 领导者 -->
                 <div class="leaders-section" id="leader-container"></div>
             </div>
         </div>
 
+        <!-- 控制面板 -->
         <div class="launch-panel">
             <div class="crew-count">
                 <span>👽 Crew with wishes </span>
@@ -1149,11 +1316,13 @@
         </div>
     </div>
 
-    <!-- 探索模式的UFO -->
+    <!-- 探索模式的UFO - 带船员和QCC -->
     <div class="exploring-ufo" id="exploringUFO">
         <div class="warp-effect" id="warpEffect"></div>
         <div class="ufo-explore-wrapper">
             <div class="ufo-explore">
+                <!-- QCC已经写在UFO的顶部 -->
+                <!-- 船员们会动态添加到这里，向下移动避免挡住QCC -->
                 <div class="crew-on-ufo" id="crewOnUFO"></div>
                 <div class="explore-beam"></div>
             </div>
@@ -1163,25 +1332,9 @@
         </div>
     </div>
 
-    <div id="toast" class="toast" style="opacity:0;">🌌 Connected</div>
+    <div id="toast" class="toast" style="opacity:0;">🌌 Cosmic sync established</div>
 
     <script>
-        // ==================== 🔥 FIREBASE CONFIG 🔥 ====================
-        // REPLACE THIS WITH YOUR OWN FIREBASE CONFIG
-        const firebaseConfig = {
-        apiKey: "AIzaSyAqbhrJLe6-ORixO1R3BLV_e-UjLMi12EM",
-        authDomain: "sprint-launcher.firebaseapp.com",
-        projectId: "sprint-launcher",
-        storageBucket: "sprint-launcher.firebasestorage.app",
-        messagingSenderId: "626810235429",
-        appId: "1:626810235429:web:413a1a07878a909790edcc",
-        measurementId: "G-D67WK3204J"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
         // ==================== Team Data ====================
         const teamData = {
             quality: [
@@ -1190,30 +1343,28 @@
                 { name: 'Iris', avatar: '🌸' }
             ],
             cicd: [
-                { name: 'Cavin', avatar: '👨‍🔧' },
+                { name: 'Caiven', avatar: '👨‍🔧' },
                 { name: 'Howard', avatar: '👨‍💻' }
             ],
             dashboard: [
-                { name: 'Dora', avatar: '🐢' },
                 { name: 'Danny', avatar: '📈' },
-                { name: 'Anthony', avatar: '👨‍🔧' },
+                { name: 'Dora', avatar: '🐢' },
                 { name: 'Angel', avatar: '😇' },
-                { name: 'Charles', avatar: '👑' },
-                { name: 'David', avatar: '👨‍💻' }
+                { name: 'Charles', avatar: '👑' }
             ],
             codequality: [
-                { name: 'Emma', avatar: '📚' },
                 { name: 'Linda', avatar: '👩‍🏫' },
+                { name: 'Emma', avatar: '📚' },
                 { name: 'Molly', avatar: '🐭' },
                 { name: 'Peter', avatar: '🐺' },
                 { name: 'Nevin', avatar: '🧙' }
             ],
             oss: [
-                { name: 'Victoria', avatar: '🏆' }
+                { name: 'Victory', avatar: '🏆' }
             ],
             leaders: [
                 { name: 'Lili', avatar: '👩‍🚀' },
-                { name: 'Yangcheng', avatar: '🧑‍🚀' }
+                { name: 'Yancheng', avatar: '🧑‍🚀' }
             ]
         };
 
@@ -1226,7 +1377,7 @@
             ...teamData.leaders
         ];
 
-        // ==================== Room ID from URL ====================
+        // ==================== Room ID ====================
         const urlParams = new URLSearchParams(window.location.search);
         let roomId = urlParams.get('room');
         if (!roomId) {
@@ -1253,12 +1404,13 @@
         const toast = document.getElementById('toast');
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
-        const onlineCountSpan = document.getElementById('onlineCount');
+        const peerCountSpan = document.getElementById('peerCount');
         const bridge = document.getElementById('bridge');
         const crewDisplay = document.getElementById('crewDisplay');
         const exploringUFO = document.getElementById('exploringUFO');
         const warpEffect = document.getElementById('warpEffect');
         const crewOnUFO = document.getElementById('crewOnUFO');
+        const forceFallbackBtn = document.getElementById('forceFallbackBtn');
         
         const wishDialog = document.getElementById('wishDialog');
         const wishMemberName = document.getElementById('wishMemberName');
@@ -1274,117 +1426,427 @@
 
         totalCountSpan.textContent = allMembers.length;
 
-        // ==================== Firebase References ====================
-        const roomRef = database.ref('rooms/' + roomId);
-        const onlineRef = database.ref('.info/connected');
+        // ==================== PeerJS with Robust Master/Client ====================
+        let peer = null;
+        let isMaster = false;
+        let masterConn = null;
+        const clientConns = {};
+        let fallbackMode = false;
+        let fallbackInterval = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 3; // reduced from 5 for faster fallback
+        const CONNECTION_TIMEOUT = 10000; // 10 seconds
 
-        // Load initial state
-        roomRef.once('value').then((snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                if (data.logged) loggedStatus = data.logged;
-                if (data.wishes) memberWishes = data.wishes;
-                if (data.launched) launched = data.launched;
-                updateUIFromState();
-                if (launched) performLaunchEffect(true);
-            }
-        });
+        const PEER_SERVERS = [
+            { host: '0.peerjs.com', port: 443, secure: true },
+        ];
+        let serverIndex = 0;
 
-        // Listen for changes
-        roomRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                if (data.logged) loggedStatus = data.logged;
-                if (data.wishes) memberWishes = data.wishes;
-                if (data.launched && !launched) {
-                    launched = true;
-                    performLaunchEffect(true);
+        const ICE_SERVERS = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
                 }
-                updateUIFromState();
+            ]
+        };
+
+        function startPeerConnection() {
+            if (serverIndex >= PEER_SERVERS.length) {
+                console.warn('All servers failed, switching to fallback mode');
+                enableFallbackMode();
+                return;
             }
-        });
 
-        // Online presence
-        const userRef = database.ref('rooms/' + roomId + '/users/' + Math.random().toString(36).substring(2));
-        onlineRef.on('value', (snap) => {
-            if (snap.val() === true) {
-                userRef.set({ online: true, timestamp: Date.now() });
-                userRef.onDisconnect().remove();
-            }
-        });
+            const server = PEER_SERVERS[serverIndex];
+            statusText.textContent = `Connecting to ${server.host}...`;
 
-        // Count online users
-        database.ref('rooms/' + roomId + '/users').on('value', (snap) => {
-            const count = snap.numChildren();
-            onlineCountSpan.textContent = count;
-        });
+            // Try to become master with the room ID
+            peer = new Peer(roomId, {
+                host: server.host,
+                port: server.port,
+                secure: server.secure,
+                config: ICE_SERVERS
+            });
 
-        // ==================== Sync to Firebase ====================
-        function syncState() {
-            roomRef.set({
-                logged: loggedStatus,
-                wishes: memberWishes,
-                launched: launched
+            const masterTimeout = setTimeout(() => {
+                console.warn(`Timeout on ${server.host}`);
+                peer.destroy();
+                serverIndex++;
+                startPeerConnection();
+            }, CONNECTION_TIMEOUT);
+
+            peer.on('open', (id) => {
+                clearTimeout(masterTimeout);
+                console.log('Became master on', server.host);
+                isMaster = true;
+                statusDot.classList.add('connected');
+                statusText.textContent = 'Connected as room master';
+                setupMaster();
+                updatePeerCount(true);
+                // Send heartbeat every 10 seconds to keep connections alive
+                setInterval(() => {
+                    if (isMaster && Object.keys(clientConns).length > 0) {
+                        broadcastHeartbeat();
+                    }
+                }, 10000);
+            });
+
+            peer.on('error', (err) => {
+                clearTimeout(masterTimeout);
+                console.log(`Failed to become master on ${server.host}:`, err);
+                peer.destroy();
+                connectAsClient(server);
             });
         }
 
-        // ==================== Wish Functions ====================
-        function showWishDialog(index) {
-            if (launched) {
-                showToast('🛸 Expedition already launched');
-                return;
-            }
-            pendingWishIndex = index;
-            wishMemberName.textContent = `${allMembers[index].avatar} ${allMembers[index].name}`;
-            wishInput.value = memberWishes[index] || '';
-            wishDialog.classList.add('visible');
+        function connectAsClient(server) {
+            const clientId = roomId + '-' + Math.random().toString(36).substring(2, 10) + '-' + Date.now();
+            peer = new Peer(clientId, {
+                host: server.host,
+                port: server.port,
+                secure: server.secure,
+                config: ICE_SERVERS
+            });
+
+            const clientTimeout = setTimeout(() => {
+                console.warn(`Client connection timeout on ${server.host}`);
+                peer.destroy();
+                serverIndex++;
+                startPeerConnection();
+            }, CONNECTION_TIMEOUT);
+
+            peer.on('open', (id) => {
+                clearTimeout(clientTimeout);
+                console.log('Client connected to', server.host);
+                statusDot.classList.add('connected');
+                statusText.textContent = 'Connecting to master...';
+                reconnectAttempts = 0; // reset on successful peer open
+
+                // Small delay to ensure master is ready
+                setTimeout(() => {
+                    masterConn = peer.connect(roomId);
+                    if (!masterConn) {
+                        console.warn('Failed to create connection to master');
+                        retryClientConnection(server);
+                        return;
+                    }
+
+                    const connTimeout = setTimeout(() => {
+                        console.warn('Connection to master timed out');
+                        masterConn = null;
+                        retryClientConnection(server);
+                    }, CONNECTION_TIMEOUT);
+
+                    masterConn.on('open', () => {
+                        clearTimeout(connTimeout);
+                        console.log('Connected to master');
+                        statusText.textContent = 'Connected to room master';
+                        masterConn.send({
+                            type: 'sync',
+                            state: loggedStatus,
+                            wishes: memberWishes,
+                            launched: launched
+                        });
+                    });
+
+                    masterConn.on('data', handleMasterMessage);
+                    masterConn.on('close', () => {
+                        console.log('Master disconnected, reconnecting...');
+                        masterConn = null;
+                        retryClientConnection(server);
+                    });
+                    masterConn.on('error', (err) => {
+                        console.error('Master connection error:', err);
+                        masterConn = null;
+                        retryClientConnection(server);
+                    });
+                }, 500);
+            });
+
+            peer.on('error', (err) => {
+                clearTimeout(clientTimeout);
+                console.error('Client error:', err);
+                peer.destroy();
+                retryClientConnection(server);
+            });
         }
 
-        function hideWishDialog() {
-            wishDialog.classList.remove('visible');
-            pendingWishIndex = null;
+        function retryClientConnection(server) {
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                reconnectAttempts++;
+                const delay = Math.pow(2, reconnectAttempts) * 1000; // exponential backoff
+                console.log(`Retrying connection to master in ${delay}ms (attempt ${reconnectAttempts})`);
+                statusText.textContent = `Reconnecting to master (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`;
+                setTimeout(() => {
+                    if (peer && !peer.destroyed) {
+                        // Try to connect again using the same peer
+                        const newConn = peer.connect(roomId);
+                        if (newConn) {
+                            setupClientConnection(newConn, server);
+                        } else {
+                            // If peer is dead, restart
+                            peer.destroy();
+                            serverIndex++;
+                            startPeerConnection();
+                        }
+                    } else {
+                        serverIndex++;
+                        startPeerConnection();
+                    }
+                }, delay);
+            } else {
+                console.warn('Max reconnect attempts reached, trying next server');
+                peer.destroy();
+                serverIndex++;
+                startPeerConnection();
+            }
         }
 
-        wishSubmit.addEventListener('click', () => {
-            if (pendingWishIndex === null) return;
-            const wish = wishInput.value.trim();
-            if (!wish) {
-                showToast('✨ Please write your wish first');
-                return;
+        function setupClientConnection(conn, server) {
+            masterConn = conn;
+            const connTimeout = setTimeout(() => {
+                console.warn('Connection to master timed out');
+                masterConn = null;
+                retryClientConnection(server);
+            }, CONNECTION_TIMEOUT);
+
+            conn.on('open', () => {
+                clearTimeout(connTimeout);
+                console.log('Connected to master');
+                statusText.textContent = 'Connected to room master';
+                conn.send({
+                    type: 'sync',
+                    state: loggedStatus,
+                    wishes: memberWishes,
+                    launched: launched
+                });
+            });
+
+            conn.on('data', handleMasterMessage);
+            conn.on('close', () => {
+                console.log('Master disconnected, reconnecting...');
+                masterConn = null;
+                retryClientConnection(server);
+            });
+            conn.on('error', (err) => {
+                console.error('Master connection error:', err);
+                masterConn = null;
+                retryClientConnection(server);
+            });
+        }
+
+        function setupMaster() {
+            peer.on('connection', (conn) => {
+                const clientId = conn.peer;
+                console.log('Client connected:', clientId);
+                clientConns[clientId] = conn;
+                updatePeerCount(true);
+
+                conn.on('data', (data) => {
+                    if (data.type === 'sync') {
+                        mergeState(data);
+                        broadcastStateToAll();
+                    }
+                });
+
+                conn.on('close', () => {
+                    delete clientConns[clientId];
+                    updatePeerCount(true);
+                });
+
+                conn.on('error', (err) => {
+                    console.error('Client connection error:', err);
+                    delete clientConns[clientId];
+                    updatePeerCount(true);
+                });
+            });
+        }
+
+        function broadcastHeartbeat() {
+            const message = { type: 'heartbeat', timestamp: Date.now() };
+            Object.values(clientConns).forEach(conn => {
+                if (conn.open) conn.send(message);
+            });
+        }
+
+        function mergeState(data) {
+            if (data.state) {
+                data.state.forEach((val, idx) => {
+                    if (val) loggedStatus[idx] = true;
+                });
             }
-            const index = pendingWishIndex;
-            memberWishes[index] = wish;
-            loggedStatus[index] = true;
+            if (data.wishes) {
+                data.wishes.forEach((wish, idx) => {
+                    if (wish && wish.trim()) memberWishes[idx] = wish;
+                });
+            }
+            if (data.launched && !launched) {
+                performLaunchEffect(true);
+            }
             updateUIFromState();
-            syncState();
-            hideWishDialog();
-            showToast(`✨ ${allMembers[index].name}'s wish recorded`);
-        });
+        }
 
-        wishCancel.addEventListener('click', hideWishDialog);
-        wishDialog.addEventListener('click', (e) => { if (e.target === wishDialog) hideWishDialog(); });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                hideWishDialog();
-                hideWishList();
+        function broadcastStateToAll() {
+            const message = {
+                type: 'sync',
+                state: loggedStatus,
+                wishes: memberWishes,
+                launched: launched
+            };
+            Object.values(clientConns).forEach(conn => {
+                if (conn.open) conn.send(message);
+            });
+        }
+
+        function handleMasterMessage(data) {
+            if (data.type === 'sync') {
+                mergeState(data);
+            } else if (data.type === 'heartbeat') {
+                // ignore, just keep connection alive
             }
+        }
+
+        function broadcastState() {
+            if (fallbackMode) return;
+            if (isMaster) {
+                broadcastStateToAll();
+            } else {
+                if (masterConn && masterConn.open) {
+                    masterConn.send({
+                        type: 'sync',
+                        state: loggedStatus,
+                        wishes: memberWishes,
+                        launched: launched
+                    });
+                }
+            }
+        }
+
+        function updatePeerCount(isMasterPeer) {
+            if (fallbackMode) {
+                peerCountSpan.textContent = '👽 Fallback mode';
+                return;
+            }
+            if (isMasterPeer) {
+                const count = Object.keys(clientConns).length + 1;
+                peerCountSpan.textContent = `👽 Crew: ${count}`;
+            } else {
+                peerCountSpan.textContent = '👽 Connected to master';
+            }
+        }
+
+        // ==================== Fallback Mode ====================
+        function enableFallbackMode() {
+            if (fallbackMode) return;
+            fallbackMode = true;
+            statusDot.classList.remove('connected');
+            statusDot.style.background = '#ffaa00';
+            statusText.textContent = 'Fallback: share URL to sync';
+            peerCountSpan.textContent = '👽 Fallback mode';
+
+            // Remove any existing copy button to avoid duplicates
+            const oldBtn = document.querySelector('.connection-bar .fallback-copy-btn');
+            if (oldBtn) oldBtn.remove();
+
+            const copyBtn = document.createElement('button');
+            copyBtn.innerHTML = '📋 Copy Share Link';
+            copyBtn.onclick = copyShareableLink;
+            copyBtn.style.background = '#4a2b6e';
+            copyBtn.style.border = '2px solid #b87cff';
+            copyBtn.style.color = 'white';
+            copyBtn.style.padding = '5px 15px';
+            copyBtn.style.borderRadius = '30px';
+            copyBtn.style.cursor = 'pointer';
+            copyBtn.style.marginLeft = '15px';
+            copyBtn.classList.add('fallback-copy-btn');
+            document.querySelector('.connection-bar').appendChild(copyBtn);
+
+            fallbackInterval = setInterval(() => {
+                const state = {
+                    logged: loggedStatus,
+                    wishes: memberWishes,
+                    launched: launched
+                };
+                window.location.hash = btoa(JSON.stringify(state));
+            }, 2000);
+
+            window.addEventListener('hashchange', () => {
+                try {
+                    const hash = window.location.hash.substring(1);
+                    if (hash) {
+                        const state = JSON.parse(atob(hash));
+                        if (state.logged) loggedStatus = state.logged;
+                        if (state.wishes) memberWishes = state.wishes;
+                        if (state.launched && !launched) performLaunchEffect(true);
+                        updateUIFromState();
+                        showToast('🔄 State synced from URL');
+                    }
+                } catch (e) {}
+            });
+
+            showToast('📋 Fallback mode: use "Copy Link" button to share state');
+        }
+
+        function copyShareableLink() {
+            const state = {
+                logged: loggedStatus,
+                wishes: memberWishes,
+                launched: launched
+            };
+            const hash = btoa(JSON.stringify(state));
+            const url = window.location.href.split('#')[0] + '#' + hash;
+            navigator.clipboard.writeText(url);
+            showToast('✨ Link copied! Share it with your team');
+        }
+
+        // ==================== Force Fallback Button ====================
+        forceFallbackBtn.addEventListener('click', () => {
+            if (peer && !peer.destroyed) {
+                peer.destroy();
+            }
+            enableFallbackMode();
         });
 
-        // ==================== Wish List ====================
+        // ==================== Wish List Functions ====================
         function showWishList() {
             let html = '';
-            allMembers.forEach((member, i) => {
-                const wish = memberWishes[i]?.trim() ? memberWishes[i] : '✨ 还没写下愿望';
-                const emptyClass = !memberWishes[i]?.trim() ? 'wish-item-empty' : '';
-                html += `
-                    <div class="wish-list-item" style="${!memberWishes[i]?.trim() ? 'opacity: 0.6;' : ''}">
-                        <div class="wish-item-avatar">${member.avatar}</div>
-                        <div class="wish-item-info">
-                            <div class="wish-item-name">${member.name}</div>
-                            <div class="wish-item-text ${emptyClass}">${wish}</div>
+            allMembers.forEach((member, index) => {
+                if (memberWishes[index] && memberWishes[index].trim()) {
+                    html += `
+                        <div class="wish-list-item">
+                            <div class="wish-item-avatar">${member.avatar}</div>
+                            <div class="wish-item-info">
+                                <div class="wish-item-name">${member.name}</div>
+                                <div class="wish-item-text">"${memberWishes[index]}"</div>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
+            });
+            allMembers.forEach((member, index) => {
+                if (!memberWishes[index] || !memberWishes[index].trim()) {
+                    html += `
+                        <div class="wish-list-item" style="opacity: 0.6;">
+                            <div class="wish-item-avatar">${member.avatar}</div>
+                            <div class="wish-item-info">
+                                <div class="wish-item-name">${member.name}</div>
+                                <div class="wish-item-text wish-item-empty">✨ 还没写下愿望</div>
+                            </div>
+                        </div>
+                    `;
+                }
             });
             wishListContent.innerHTML = html;
             wishListDialog.classList.add('visible');
@@ -1394,13 +1856,7 @@
             wishListDialog.classList.remove('visible');
         }
 
-        showWishListBtn.addEventListener('click', showWishList);
-        wishListClose.addEventListener('click', hideWishList);
-        wishListDialog.addEventListener('click', (e) => { if (e.target === wishListDialog) hideWishList(); });
-
-        // ==================== Export ====================
-        exportWishesBtn.addEventListener('click', exportWishesAsHTML);
-           function exportWishesAsHTML() {
+        function exportWishesAsHTML() {
             const now = new Date();
             const dateStr = now.toISOString().slice(0,10).replace(/-/g,'');
             const timeStr = now.toTimeString().slice(0,8).replace(/:/g,'');
@@ -1592,64 +2048,179 @@
             showToast(`📥 愿望已导出为HTML文件`);
         }
 
+        // ==================== Wish Dialog Logic ====================
+        function showWishDialog(index) {
+            if (launched) {
+                showToast('🛸 Expedition already launched');
+                return;
+            }
+            
+            const member = allMembers[index];
+            pendingWishIndex = index;
+            wishMemberName.textContent = `${member.avatar} ${member.name}`;
+            wishInput.value = memberWishes[index] || '';
+            wishInput.focus();
+            wishDialog.classList.add('visible');
+        }
+
+        function hideWishDialog() {
+            wishDialog.classList.remove('visible');
+            pendingWishIndex = null;
+        }
+
+        wishSubmit.addEventListener('click', () => {
+            if (pendingWishIndex === null) return;
+            
+            const wish = wishInput.value.trim();
+            if (!wish) {
+                showToast('✨ Please write your wish first');
+                return;
+            }
+            
+            const index = pendingWishIndex;
+            const member = allMembers[index];
+            
+            memberWishes[index] = wish;
+            loggedStatus[index] = true;
+            
+            updateUIFromState();
+            broadcastState();
+            
+            hideWishDialog();
+            showToast(`✨ ${member.name}'s wish recorded for the cosmos`);
+        });
+
+        wishCancel.addEventListener('click', hideWishDialog);
+
+        wishDialog.addEventListener('click', (e) => {
+            if (e.target === wishDialog) {
+                hideWishDialog();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (wishDialog.classList.contains('visible')) {
+                    hideWishDialog();
+                }
+                if (wishListDialog.classList.contains('visible')) {
+                    hideWishList();
+                }
+            }
+        });
+
+        // ==================== Wish List Event Listeners ====================
+        showWishListBtn.addEventListener('click', showWishList);
+        wishListClose.addEventListener('click', hideWishList);
+        wishListDialog.addEventListener('click', (e) => {
+            if (e.target === wishListDialog) {
+                hideWishList();
+            }
+        });
+        exportWishesBtn.addEventListener('click', exportWishesAsHTML);
+
         // ==================== Render Team ====================
         function renderTeam() {
-            const containers = {
-                quality: document.getElementById('topic-quality'),
-                cicd: document.getElementById('topic-cicd'),
-                dashboard: document.getElementById('topic-dashboard'),
-                codequality: document.getElementById('topic-codequality'),
-                oss: document.getElementById('topic-oss')
-            };
-            Object.keys(containers).forEach(key => {
-                teamData[key].forEach(member => {
-                    const globalIndex = allMembers.findIndex(m => m.name === member.name);
-                    containers[key].appendChild(createCrewCard(member, globalIndex));
-                });
+            const qualityContainer = document.getElementById('topic-quality');
+            teamData.quality.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                qualityContainer.appendChild(createCrewCard(member, globalIndex));
+            });
+
+            const cicdContainer = document.getElementById('topic-cicd');
+            teamData.cicd.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                cicdContainer.appendChild(createCrewCard(member, globalIndex));
+            });
+
+            const dashboardContainer = document.getElementById('topic-dashboard');
+            teamData.dashboard.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                dashboardContainer.appendChild(createCrewCard(member, globalIndex));
+            });
+
+            const codequalityContainer = document.getElementById('topic-codequality');
+            teamData.codequality.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                codequalityContainer.appendChild(createCrewCard(member, globalIndex));
+            });
+
+            const ossContainer = document.getElementById('topic-oss');
+            teamData.oss.forEach((member) => {
+                const globalIndex = allMembers.findIndex(m => m.name === member.name);
+                ossContainer.appendChild(createCrewCard(member, globalIndex));
             });
 
             const leaderContainer = document.getElementById('leader-container');
-            teamData.leaders.forEach(member => {
+            teamData.leaders.forEach((member) => {
                 const globalIndex = allMembers.findIndex(m => m.name === member.name);
                 const card = document.createElement('div');
                 card.className = `leader-card ${loggedStatus[globalIndex] ? 'logged' : ''}`;
                 card.dataset.index = globalIndex;
-                card.innerHTML = `<div class="avatar">${member.avatar}</div><div class="leader-name">${member.name}</div>`;
-                card.addEventListener('click', () => showWishDialog(globalIndex));
+
+                card.innerHTML = `
+                    <div class="avatar">${member.avatar}</div>
+                    <div class="leader-name">${member.name}</div>
+                `;
+
+                card.addEventListener('click', () => {
+                    showWishDialog(globalIndex);
+                });
+
                 leaderContainer.appendChild(card);
             });
         }
 
-        function createCrewCard(member, index) {
+        function createCrewCard(member, globalIndex) {
             const card = document.createElement('div');
-            card.className = `crew-card ${loggedStatus[index] ? 'logged' : ''}`;
-            card.dataset.index = index;
-            card.innerHTML = `<div class="avatar">${member.avatar}</div><div class="crew-name">${member.name}</div>`;
-            card.addEventListener('click', () => showWishDialog(index));
+            card.className = `crew-card ${loggedStatus[globalIndex] ? 'logged' : ''}`;
+            card.dataset.index = globalIndex;
+
+            card.innerHTML = `
+                <div class="avatar">${member.avatar}</div>
+                <div class="crew-name">${member.name}</div>
+            `;
+
+            card.addEventListener('click', () => {
+                showWishDialog(globalIndex);
+            });
+
             return card;
         }
 
         function updateUIFromState() {
-            document.querySelectorAll('.crew-card').forEach(card => {
+            document.querySelectorAll('.crew-card').forEach((card) => {
                 const idx = card.dataset.index;
-                if (idx && loggedStatus[parseInt(idx)]) card.classList.add('logged');
-                else card.classList.remove('logged');
+                if (idx !== undefined && loggedStatus[parseInt(idx)]) {
+                    card.classList.add('logged');
+                } else if (idx !== undefined) {
+                    card.classList.remove('logged');
+                }
             });
-            document.querySelectorAll('.leader-card').forEach(card => {
+
+            document.querySelectorAll('.leader-card').forEach((card) => {
                 const idx = card.dataset.index;
-                if (idx && loggedStatus[parseInt(idx)]) card.classList.add('logged');
-                else card.classList.remove('logged');
+                if (idx !== undefined && loggedStatus[parseInt(idx)]) {
+                    card.classList.add('logged');
+                } else {
+                    card.classList.remove('logged');
+                }
             });
+
             const loggedCount = loggedStatus.filter(v => v).length;
             loggedCountSpan.textContent = loggedCount;
-            progressFill.style.width = (loggedCount / allMembers.length * 100) + '%';
+            const percent = (loggedCount / allMembers.length) * 100;
+            progressFill.style.width = percent + '%';
+
             const allLogged = loggedCount === allMembers.length;
             if (allLogged) {
                 engineLabel.innerText = '🌀 Quantum Drive · Primed';
+                engineLabel.style.color = '#b3ffb3';
                 engineGlow.classList.add('primed');
                 launchBtn.classList.add('active');
             } else {
                 engineLabel.innerText = '🌀 Quantum Drive · Standby';
+                engineLabel.style.color = '#9bc7ff';
                 engineGlow.classList.remove('primed');
                 launchBtn.classList.remove('active');
             }
@@ -1658,69 +2229,133 @@
         // ==================== Launch Effect ====================
         function performLaunchEffect(fromSync = false) {
             launched = true;
-            document.querySelectorAll('.crew-card, .leader-card').forEach(c => {
-                c.classList.add('exiting');
-                c.style.pointerEvents = 'none';
+            
+            const cards = document.querySelectorAll('.crew-card, .leader-card');
+            cards.forEach(card => {
+                card.classList.add('exiting');
+                card.style.pointerEvents = 'none';
             });
-            const loggedMembers = allMembers.filter((_, i) => loggedStatus[i]);
+            
+            const loggedMembers = [];
+            allMembers.forEach((member, index) => {
+                if (loggedStatus[index]) {
+                    loggedMembers.push({
+                        ...member,
+                        wish: memberWishes[index] || 'To the stars!'
+                    });
+                }
+            });
+            
             crewOnUFO.innerHTML = '';
-            loggedMembers.forEach(m => {
-                const el = document.createElement('div');
-                el.className = 'ufo-crew-member';
-                el.textContent = m.avatar;
-                el.setAttribute('data-wish', memberWishes[allMembers.indexOf(m)] || 'To the stars!');
-                crewOnUFO.appendChild(el);
+            loggedMembers.forEach(member => {
+                const crewEl = document.createElement('div');
+                crewEl.className = 'ufo-crew-member';
+                crewEl.textContent = member.avatar;
+                crewEl.setAttribute('data-wish', member.wish);
+                crewOnUFO.appendChild(crewEl);
             });
+            
             bridge.classList.add('fade-out');
+            
             setTimeout(() => {
                 exploringUFO.classList.add('visible');
                 warpEffect.style.opacity = '1';
+                
                 let angle = 0;
-                setInterval(() => {
-                    if (!exploringUFO.classList.contains('visible')) return;
+                const exploreInterval = setInterval(() => {
+                    if (!exploringUFO.classList.contains('visible')) {
+                        clearInterval(exploreInterval);
+                        return;
+                    }
+                    
                     angle += 0.02;
-                    exploringUFO.style.transform = `translate(calc(-50% + ${Math.sin(angle)*50}px), calc(-50% + ${Math.cos(angle*1.3)*30}px)) scale(${1+Math.sin(angle*2)*0.05}) rotate(${Math.sin(angle)*5}deg)`;
+                    const x = Math.sin(angle) * 50;
+                    const y = Math.cos(angle * 1.3) * 30;
+                    const scale = 1 + Math.sin(angle * 2) * 0.05;
+                    const rotate = Math.sin(angle) * 5;
+                    
+                    exploringUFO.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${scale}) rotate(${rotate}deg)`;
                 }, 50);
-                for (let i=0; i<50; i++) setTimeout(createStarTrail, i*100);
+                
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        createStarTrail();
+                    }, i * 100);
+                }
+                
+                const starInterval = setInterval(() => {
+                    if (!exploringUFO.classList.contains('visible')) {
+                        clearInterval(starInterval);
+                        return;
+                    }
+                    createStarTrail();
+                }, 300);
             }, 1500);
-            if (!fromSync) syncState();
+            
+            if (!fromSync) {
+                broadcastState();
+                showToast(`🛸 Expedition launched! ${loggedMembers.length} wishes carried to the stars`);
+            }
         }
 
         function createStarTrail() {
             const trail = document.createElement('div');
-            trail.style.cssText = 'position:fixed; width:4px; height:4px; background:white; border-radius:50%; box-shadow:0 0 20px cyan; animation:starTrail 2s forwards;';
-            trail.style.left = Math.random()*100 + '%';
-            trail.style.top = Math.random()*100 + '%';
+            trail.style.position = 'fixed';
+            trail.style.left = Math.random() * 100 + '%';
+            trail.style.top = Math.random() * 100 + '%';
+            trail.style.width = '4px';
+            trail.style.height = '4px';
+            trail.style.background = 'white';
+            trail.style.borderRadius = '50%';
+            trail.style.boxShadow = '0 0 20px cyan, 0 0 40px blue';
+            trail.style.zIndex = '500';
+            trail.style.animation = 'starTrail 2s forwards';
             document.body.appendChild(trail);
+            
             setTimeout(() => trail.remove(), 2000);
         }
 
         const style = document.createElement('style');
-        style.textContent = `@keyframes starTrail {0%{opacity:1; transform:scale(1);}100%{opacity:0; transform:scale(3) translate(${Math.random()*200-100}px, ${Math.random()*200-100}px);}}`;
+        style.textContent = `
+            @keyframes starTrail {
+                0% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(3) translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px); }
+            }
+        `;
         document.head.appendChild(style);
 
-        function showToast(msg) {
+        function showToast(message) {
             toast.style.opacity = '1';
-            toast.textContent = msg;
-            setTimeout(() => toast.style.opacity = '0', 2000);
+            toast.textContent = message;
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
         }
 
         // ==================== Initialize ====================
         renderTeam();
         updateUIFromState();
+        startPeerConnection();
 
         launchBtn.addEventListener('click', () => {
-            if (loggedStatus.filter(v=>v).length === 0) {
+            const loggedCount = loggedStatus.filter(v => v).length;
+            
+            if (loggedCount === 0) {
                 showToast('🌌 At least one explorer must make a wish');
                 return;
             }
+            
             if (launched) {
-                showToast('🛸 Already exploring');
+                showToast('🛸 Already exploring the cosmos');
                 return;
             }
-            if (loggedStatus.filter(v=>v).length < allMembers.length) {
-                if (!confirm('Some wishes missing. Launch anyway?')) return;
+
+            if (loggedCount < allMembers.length) {
+                if (!confirm('Some wishes haven\'t been cast. Begin expedition anyway?')) {
+                    return;
+                }
             }
+            
             performLaunchEffect(false);
         });
     </script>
