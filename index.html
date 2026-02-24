@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UFO QCC · Cosmic Wishes Expedition</title>
+    <title>UFO QCC · Wishes Expedition</title>
     <!-- PeerJS for WebRTC -->
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
@@ -1222,10 +1222,10 @@
                 <span id="statusText">Connecting to cosmos...</span>
             </div>
             <div class="peer-count" id="peerCount">
-                👽 Cosmic Peers: 0
+                👽 Peers: 0
             </div>
             <div class="room-badge" id="roomDisplay">
-                🌌 Room: <span id="roomId">loading</span>
+                🌌 Sprint: <span id="roomId">loading</span>
             </div>
         </div>
 
@@ -1325,7 +1325,7 @@
         </div>
     </div>
 
-    <div id="toast" class="toast" style="opacity:0;">🌌 Cosmic sync established</div>
+    <div id="toast" class="toast" style="opacity:0;">🌌 Sync established</div>
 
     <script>
         // ==================== Team Data ====================
@@ -1377,7 +1377,7 @@
         if (!roomId) {
             roomId = 'QCC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
             const url = new URL(window.location);
-            url.searchParams.set('room', roomId);
+            url.searchParams.set('sprint', roomId);
             window.history.pushState({}, '', url);
         }
 
@@ -1386,7 +1386,7 @@
         const peerId = roomId + '-' + Math.random().toString(36).substring(2, 6);
         
         const peer = new Peer(peerId, {
-            host: 'peerjs-server.herokuapp.com',
+            host: '0.peerjs.com',
             secure: true,
             port: 443,
             config: {
@@ -1762,7 +1762,7 @@
         // ==================== Peer Events ====================
         peer.on('open', (id) => {
             statusDot.classList.add('connected');
-            statusText.textContent = 'Connected to cosmic network';
+            statusText.textContent = 'Connected to network';
             connectToRoom();
         });
 
@@ -1772,7 +1772,7 @@
 
         peer.on('error', (err) => {
             console.log('Peer error:', err);
-            statusText.textContent = 'Reconnecting to cosmos...';
+            statusText.textContent = 'Reconnecting...';
         });
 
         function connectToRoom() {
@@ -1841,7 +1841,7 @@
 
         function updatePeerCount() {
             peerCount = Object.keys(peers).length;
-            peerCountSpan.textContent = `👽 Cosmic Peers: ${peerCount}`;
+            peerCountSpan.textContent = `👽 Peers: ${peerCount}`;
         }
 
         // ==================== Render Team ====================
